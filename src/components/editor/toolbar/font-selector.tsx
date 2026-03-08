@@ -41,9 +41,9 @@ export function FontSelector() {
             <SelectItem key={font.name} value={font.name}>
               <div className="flex items-center justify-between w-full gap-4">
                 <span style={{ fontFamily: font.name }}>{font.name}</span>
-                <span className="text-[10px] text-muted-foreground">
+                {/* <span className="text-[10px] text-muted-foreground">
                   {font.category}
-                </span>
+                </span> */}
               </div>
             </SelectItem>
           ))}

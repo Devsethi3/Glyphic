@@ -1,4 +1,3 @@
-// src/components/editor/editor-header.tsx
 import { Link } from "react-router-dom";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PencilEdit02Icon } from "@hugeicons/core-free-icons";
@@ -8,7 +7,7 @@ import { ExportDialog } from "./header/export-dialog";
 
 export function EditorHeader() {
   return (
-    <header className="flex items-center justify-between px-3 sm:px-4 h-12 border-b border-border flex-shrink-0">
+    <header className="flex items-center justify-between px-3 sm:px-4 h-12 border-b border-border shrink-0">
       <Link
         to="/"
         className="flex items-center gap-2 hover:opacity-80 transition-opacity"

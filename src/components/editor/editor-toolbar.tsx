@@ -1,4 +1,3 @@
-// src/components/editor/editor-toolbar.tsx
 import { Separator } from "@/components/ui/separator";
 import { FontSelector } from "./toolbar/font-selector";
 import { LineHeightControl } from "./toolbar/line-height-control";
@@ -11,17 +10,13 @@ import { DecorationPicker } from "./toolbar/decoration-picker";
 export function EditorToolbar() {
   return (
     <div className="p-4 space-y-4 border-b border-border">
-      <FontSelector />
-      <LineHeightControl />
-      <DropCapToggle />
-
-      <Separator />
-
-      <ThemeColorControls />
-
-      <Separator />
-
-      <PaddingControls />
+      <div className="flex flex-wrap items-center gap-2">
+        <FontSelector />
+        <LineHeightControl />
+        <DropCapToggle />
+        <ThemeColorControls />
+        <PaddingControls />
+      </div>
 
       <Separator />
 
