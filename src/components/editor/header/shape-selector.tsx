@@ -7,8 +7,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Square01Icon } from "@hugeicons/core-free-icons";
 import { shapeLabels } from "@/data/shapes";
 import type { CanvasShape } from "@/types";
 import { cn } from "@/lib/utils";

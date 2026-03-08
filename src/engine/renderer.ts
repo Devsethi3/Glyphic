@@ -1,6 +1,33 @@
-// src/engine/renderer.ts
-import type { RenderConfig, TextBlock } from "@/types";
+import type { RenderConfig } from "@/types";
 import { shapes } from "@/data/shapes";
+
+// ============================================================
+// FONT SIZE CONFIGURATION
+// Adjust these values to control default canvas text sizes
+// ============================================================
+const FONT_CONFIG = {
+  // Base font size multiplier relative to content width
+  // Increase this value for larger text (e.g., 0.06 = 6% of content width)
+  BASE_SIZE_RATIO: 0.055,
+
+  // Maximum base font size in pixels (caps the size on very wide canvases)
+  MAX_BASE_SIZE: 64,
+
+  // Minimum base font size in pixels (ensures readability)
+  MIN_BASE_SIZE: 18,
+
+  // Heading scale multipliers (relative to base font size)
+  HEADING1_SCALE: 1.8,
+  HEADING2_SCALE: 1.45,
+  HEADING3_SCALE: 1.25,
+
+  // Blockquote scale (relative to base font size)
+  BLOCKQUOTE_SCALE: 1.0,
+
+  // Drop cap scale (relative to base font size)
+  DROP_CAP_SCALE: 3.2,
+};
+// ============================================================
 
 // Device pixel ratio for sharp rendering
 const getPixelRatio = () => {
@@ -55,53 +82,40 @@ export function renderCanvas(
   const shapeData = shapes[config.shape];
   const pixelRatio = getPixelRatio();
 
-  // For preview, use pixel ratio for sharpness
-  // For export, use the provided scale
   const effectiveScale = scale > 1 ? scale : pixelRatio;
 
   const width = shapeData.width * effectiveScale;
   const height = shapeData.height * effectiveScale;
 
-  // Set actual canvas dimensions (high resolution)
   canvas.width = width;
   canvas.height = height;
 
-  // Set display size via CSS (scaled down for preview)
   if (scale <= 1) {
     canvas.style.width = `${shapeData.width}px`;
     canvas.style.height = `${shapeData.height}px`;
   }
 
-  // Enable high-quality rendering
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-
-  // Scale context for high DPI
   ctx.scale(effectiveScale, effectiveScale);
 
-  // Use base dimensions for all calculations (unscaled)
   const baseWidth = shapeData.width;
   const baseHeight = shapeData.height;
 
-  // Draw background
   drawBackground(ctx, config, baseWidth, baseHeight);
 
-  // Calculate padding
   const paddingX = (config.paddingHorizontal / 100) * baseWidth;
   const paddingY = (config.paddingVertical / 100) * baseHeight;
   const contentWidth = baseWidth - paddingX * 2;
   const contentHeight = baseHeight - paddingY * 2;
 
-  // If no text, draw placeholder
   if (!config.text.trim()) {
     drawPlaceholder(ctx, config, baseWidth, baseHeight);
     return;
   }
 
-  // Parse HTML content into rich blocks with inline formatting
   const blocks = parseHtmlToRichBlocks(config.htmlContent);
 
-  // Render text blocks with vertical centering
   renderRichTextBlocksCentered(
     ctx,
     blocks,
@@ -174,7 +188,8 @@ function drawPlaceholder(
   ctx.save();
   ctx.fillStyle = config.textColor;
   ctx.globalAlpha = 0.25;
-  ctx.font = `italic 24px "${config.fontFamily}", serif`;
+  const placeholderSize = Math.max(width * 0.028, 20);
+  ctx.font = `italic ${placeholderSize}px "${config.fontFamily}", serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("Your styled text will appear here...", width / 2, height / 2);
@@ -237,7 +252,6 @@ function parseHtmlToRichBlocks(html: string): RichTextBlock[] {
         break;
       case "blockquote":
         type = "blockquote";
-        // blockquote often contains a <p> inside
         const inner = el.querySelector("p");
         if (inner) sourceEl = inner;
         break;
@@ -300,7 +314,6 @@ function walkInlineNodes(
   if (tag === "s" || tag === "del" || tag === "strike")
     current.strikethrough = true;
 
-  // Check for style attribute as well (TipTap sometimes uses inline styles)
   const style = el.getAttribute("style") || "";
   if (
     style.includes("font-weight: bold") ||
@@ -335,7 +348,7 @@ function buildFont(
   fontFamily: string,
   baseFontWeight: number,
   baseFontStyle: string,
-  span: InlineSpan | WordSpan,
+  span: InlineSpan,
 ): string {
   let weight = baseFontWeight;
   let style = baseFontStyle;
@@ -348,25 +361,6 @@ function buildFont(
 
 // ---- Measuring and wrapping with inline spans ----
 
-function measureSpanWidth(
-  ctx: CanvasRenderingContext2D,
-  span: InlineSpan,
-  fontSize: number,
-  fontFamily: string,
-  baseFontWeight: number,
-  baseFontStyle: string,
-): number {
-  ctx.font = buildFont(
-    fontSize,
-    fontFamily,
-    baseFontWeight,
-    baseFontStyle,
-    span,
-  );
-  return ctx.measureText(span.text).width;
-}
-
-// Flatten spans into word-level spans, preserving formatting
 interface WordSpan {
   word: string;
   bold: boolean;
@@ -380,14 +374,12 @@ function flattenSpansToWords(spans: InlineSpan[]): WordSpan[] {
   const words: WordSpan[] = [];
 
   for (const span of spans) {
-    // Split text on spaces, keeping track of spaces
     const parts = span.text.split(/( +)/);
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
       if (part === "") continue;
 
       if (/^ +$/.test(part)) {
-        // This is whitespace - attach to previous word as trailing space
         if (words.length > 0) {
           words[words.length - 1].trailingSpace = true;
         }
@@ -423,18 +415,14 @@ function wrapRichText(
   let currentLineWords: WordSpan[] = [];
   let currentLineWidth = 0;
 
-  const getSpaceWidth = () => {
-    ctx.font = buildFont(fontSize, fontFamily, baseFontWeight, baseFontStyle, {
-      word: " ",
-      bold: false,
-      italic: false,
-      underline: false,
-      strikethrough: false,
-      trailingSpace: false,
-    } as WordSpan);
-    return ctx.measureText(" ").width;
-  };
-  const spaceWidth = getSpaceWidth();
+  ctx.font = buildFont(fontSize, fontFamily, baseFontWeight, baseFontStyle, {
+    text: "",
+    bold: false,
+    italic: false,
+    underline: false,
+    strikethrough: false,
+  });
+  const spaceWidth = ctx.measureText(" ").width;
 
   for (const wordSpan of words) {
     ctx.font = buildFont(
@@ -442,7 +430,13 @@ function wrapRichText(
       fontFamily,
       baseFontWeight,
       baseFontStyle,
-      wordSpan,
+      {
+        text: wordSpan.word,
+        bold: wordSpan.bold,
+        italic: wordSpan.italic,
+        underline: wordSpan.underline,
+        strikethrough: wordSpan.strikethrough,
+      },
     );
     const wordWidth = ctx.measureText(wordSpan.word).width;
 
@@ -452,7 +446,6 @@ function wrapRichText(
       wordWidth;
 
     if (widthWithWord > maxWidth && currentLineWords.length > 0) {
-      // Finish current line
       lines.push(
         buildMeasuredLine(
           ctx,
@@ -501,7 +494,6 @@ function buildMeasuredLine(
   baseFontStyle: string,
   spaceWidth: number,
 ): MeasuredLine {
-  // Group consecutive words with same formatting into spans
   const spans: InlineSpan[] = [];
   let totalWidth = 0;
 
@@ -510,7 +502,6 @@ function buildMeasuredLine(
     const prefix = i > 0 ? " " : "";
     const text = prefix + w.word;
 
-    // Try to merge with previous span if same formatting
     if (
       spans.length > 0 &&
       spans[spans.length - 1].bold === w.bold &&
@@ -534,7 +525,13 @@ function buildMeasuredLine(
       fontFamily,
       baseFontWeight,
       baseFontStyle,
-      w,
+      {
+        text: w.word,
+        bold: w.bold,
+        italic: w.italic,
+        underline: w.underline,
+        strikethrough: w.strikethrough,
+      },
     );
     totalWidth += ctx.measureText(w.word).width;
     if (i > 0) totalWidth += spaceWidth;
@@ -543,11 +540,20 @@ function buildMeasuredLine(
   return { spans, width: totalWidth };
 }
 
-// ---- Rendering ----
+// ---- Size Calculation ----
 
 function calculateBaseFontSize(shape: string, contentWidth: number): number {
-  const baseSize = Math.min(contentWidth * 0.042, 28);
-  return Math.max(baseSize, 16);
+  // ============================================================
+  // ADJUST FONT_CONFIG at the top of this file to change sizes
+  // Current: BASE_SIZE_RATIO = 0.055 means 5.5% of content width
+  // For a 1080px square with 10% padding: contentWidth = 864px
+  // Base font size = 864 * 0.055 = ~47px
+  // ============================================================
+  const baseSize = contentWidth * FONT_CONFIG.BASE_SIZE_RATIO;
+  return Math.max(
+    Math.min(baseSize, FONT_CONFIG.MAX_BASE_SIZE),
+    FONT_CONFIG.MIN_BASE_SIZE,
+  );
 }
 
 function getBlockStyles(
@@ -564,7 +570,7 @@ function getBlockStyles(
   switch (type) {
     case "heading1":
       return {
-        fontSize: baseFontSize * 1.75,
+        fontSize: baseFontSize * FONT_CONFIG.HEADING1_SCALE,
         fontWeight: 700,
         fontStyle: "normal",
         opacity: 1,
@@ -573,7 +579,7 @@ function getBlockStyles(
       };
     case "heading2":
       return {
-        fontSize: baseFontSize * 1.4,
+        fontSize: baseFontSize * FONT_CONFIG.HEADING2_SCALE,
         fontWeight: 600,
         fontStyle: "normal",
         opacity: 1,
@@ -582,7 +588,7 @@ function getBlockStyles(
       };
     case "heading3":
       return {
-        fontSize: baseFontSize * 1.2,
+        fontSize: baseFontSize * FONT_CONFIG.HEADING3_SCALE,
         fontWeight: 600,
         fontStyle: "normal",
         opacity: 1,
@@ -591,7 +597,7 @@ function getBlockStyles(
       };
     case "blockquote":
       return {
-        fontSize: baseFontSize,
+        fontSize: baseFontSize * FONT_CONFIG.BLOCKQUOTE_SCALE,
         fontWeight: 400,
         fontStyle: "italic",
         opacity: 0.85,
@@ -604,11 +610,13 @@ function getBlockStyles(
         fontWeight: 400,
         fontStyle: "normal",
         opacity: 1,
-        marginTop: baseFontSize * 0.2,
-        marginBottom: baseFontSize * 0.4,
+        marginTop: baseFontSize * 0.15,
+        marginBottom: baseFontSize * 0.35,
       };
   }
 }
+
+// ---- Rendering ----
 
 function measureRichTextBlocks(
   ctx: CanvasRenderingContext2D,
@@ -791,24 +799,30 @@ function renderRichTextBlocksCentered(
 
         // Draw underline
         if (span.underline) {
-          const underlineY = currentY + fontSize * 1.05;
+          const underlineY = currentY + fontSize * 1.1;
+          ctx.save();
           ctx.strokeStyle = config.textColor;
-          ctx.lineWidth = Math.max(1, fontSize * 0.06);
+          ctx.globalAlpha = opacity;
+          ctx.lineWidth = Math.max(1, fontSize * 0.055);
           ctx.beginPath();
           ctx.moveTo(spanX, underlineY);
           ctx.lineTo(spanX + spanWidth, underlineY);
           ctx.stroke();
+          ctx.restore();
         }
 
         // Draw strikethrough
         if (span.strikethrough) {
           const strikeY = currentY + fontSize * 0.55;
+          ctx.save();
           ctx.strokeStyle = config.textColor;
-          ctx.lineWidth = Math.max(1, fontSize * 0.06);
+          ctx.globalAlpha = opacity;
+          ctx.lineWidth = Math.max(1, fontSize * 0.055);
           ctx.beginPath();
           ctx.moveTo(spanX, strikeY);
           ctx.lineTo(spanX + spanWidth, strikeY);
           ctx.stroke();
+          ctx.restore();
         }
 
         spanX += spanWidth;
@@ -853,7 +867,7 @@ function renderDropCapRich(
   baseFontStyle: string,
 ): number {
   const allText = block.spans.map((s) => s.text).join("");
-  const dropCapSize = fontSize * 3.2;
+  const dropCapSize = fontSize * FONT_CONFIG.DROP_CAP_SCALE;
   const firstChar = allText[0].toUpperCase();
   const restText = allText.slice(1);
 
@@ -862,7 +876,7 @@ function renderDropCapRich(
   // Measure drop cap
   ctx.font = `700 ${dropCapSize}px "${config.fontFamily}", serif`;
   const dropCapMetrics = ctx.measureText(firstChar);
-  const dropCapWidth = dropCapMetrics.width + 12;
+  const dropCapWidth = dropCapMetrics.width + fontSize * 0.4;
   const dropCapHeight = dropCapSize * 0.85;
   const dropCapLines = Math.ceil(dropCapHeight / lineHeight);
 
@@ -955,13 +969,10 @@ export function exportCanvas(
 
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-
   ctx.scale(scale, scale);
 
-  // Draw background
   drawBackground(ctx, config, shapeData.width, shapeData.height);
 
-  // Calculate padding
   const paddingX = (config.paddingHorizontal / 100) * shapeData.width;
   const paddingY = (config.paddingVertical / 100) * shapeData.height;
   const contentWidth = shapeData.width - paddingX * 2;

@@ -358,7 +358,6 @@
 }
 
 canvas {
-  /* Remove crisp-edges which causes pixelation */
   image-rendering: auto;
   -webkit-font-smoothing: antialiased;
 }

@@ -39,7 +39,6 @@ export function EditorCanvas() {
     shape,
   };
 
-  // Calculate display size that fits the container while maintaining aspect ratio
   const updateCanvasSize = useCallback(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
@@ -48,16 +47,14 @@ export function EditorCanvas() {
     const shapeData = shapes[shape];
     const containerRect = container.getBoundingClientRect();
 
-    // Available space with padding
-    const maxWidth = containerRect.width - 48; // 24px padding each side
+    const maxWidth = containerRect.width - 48;
     const maxHeight = containerRect.height - 48;
 
     if (maxWidth <= 0 || maxHeight <= 0) return;
 
-    // Calculate scale to fit container
     const scaleX = maxWidth / shapeData.width;
     const scaleY = maxHeight / shapeData.height;
-    const displayScale = Math.min(scaleX, scaleY, 1); // Never scale up beyond 1:1
+    const displayScale = Math.min(scaleX, scaleY, 1);
 
     const displayWidth = Math.round(shapeData.width * displayScale);
     const displayHeight = Math.round(shapeData.height * displayScale);
@@ -66,12 +63,10 @@ export function EditorCanvas() {
     canvas.style.height = `${displayHeight}px`;
   }, [shape]);
 
-  // Render canvas whenever config changes
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Wait for fonts to load
     document.fonts.ready.then(() => {
       requestAnimationFrame(() => {
         renderCanvas(canvas, config);
@@ -95,7 +90,6 @@ export function EditorCanvas() {
     updateCanvasSize,
   ]);
 
-  // Handle container resize
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
