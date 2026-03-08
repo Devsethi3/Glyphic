@@ -1,8 +1,15 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { LandingPage } from "./pages/landing";
+import { EditorPage } from "./pages/editor";
+
 function App() {
   return (
-    <>
-      <h1>Glypic</h1>
-    </>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/editor" element={<EditorPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
