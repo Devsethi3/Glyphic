@@ -1,4 +1,3 @@
-// src/components/editor/toolbar/line-height-control.tsx
 import { useEditorStore } from "@/store/editor-store";
 import { Slider } from "@/components/ui/slider";
 import {

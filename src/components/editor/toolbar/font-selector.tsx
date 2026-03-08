@@ -26,14 +26,14 @@ export function FontSelector() {
 
   return (
     <div className="space-y-1.5">
-      <label className="text-[11px] text-muted-foreground font-medium">
+      {/* <label className="text-[11px] text-muted-foreground font-medium">
         Font
-      </label>
+      </label> */}
       <Select
         value={fontFamily}
         onValueChange={(v) => setFontFamily(v as FontFamily)}
       >
-        <SelectTrigger className="h-8 text-xs">
+        <SelectTrigger className="h-8!">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -41,9 +41,9 @@ export function FontSelector() {
             <SelectItem key={font.name} value={font.name}>
               <div className="flex items-center justify-between w-full gap-4">
                 <span style={{ fontFamily: font.name }}>{font.name}</span>
-                {/* <span className="text-[10px] text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground">
                   {font.category}
-                </span> */}
+                </span>
               </div>
             </SelectItem>
           ))}

@@ -9,18 +9,16 @@ import { DecorationPicker } from "./toolbar/decoration-picker";
 
 export function EditorToolbar() {
   return (
-    <div className="p-4 space-y-4 border-b border-border">
+    <div className="p-4 space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <FontSelector />
         <LineHeightControl />
         <DropCapToggle />
         <ThemeColorControls />
         <PaddingControls />
-      </div>
 
-      <Separator />
+        <Separator orientation="vertical" />
 
-      <div className="flex gap-2">
         <KaomojiPicker />
         <DecorationPicker />
       </div>

@@ -1,4 +1,3 @@
-// src/components/editor/toolbar/drop-cap-toggle.tsx
 import { useEditorStore } from "@/store/editor-store";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";

@@ -1,4 +1,3 @@
-// src/store/editor-store.ts
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import type { Editor } from "@tiptap/react";
