@@ -1,20 +1,13 @@
 // src/components/editor/editor-canvas.tsx
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useEditorStore } from "@/store/editor-store";
 import { renderCanvas } from "@/engine/renderer";
 import { shapes } from "@/data/shapes";
 import type { RenderConfig } from "@/types";
 
-// Fixed preview sizes for each shape
-const PREVIEW_SIZES = {
-  square: { width: 400, height: 400 },
-  portrait: { width: 360, height: 450 },
-  landscape: { width: 480, height: 270 },
-  vertical: { width: 280, height: 500 },
-};
-
 export function EditorCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const content = useEditorStore((s) => s.content);
   const htmlContent = useEditorStore((s) => s.htmlContent);
@@ -30,42 +23,48 @@ export function EditorCanvas() {
   const paddingVertical = useEditorStore((s) => s.paddingVertical);
   const shape = useEditorStore((s) => s.shape);
 
-  const config: RenderConfig = useMemo(
-    () => ({
-      text: content,
-      htmlContent,
-      fontFamily,
-      lineHeight,
-      dropCap,
-      backgroundColor,
-      textColor,
-      backgroundType,
-      gradientColors,
-      gradientAngle,
-      paddingHorizontal,
-      paddingVertical,
-      shape,
-    }),
-    [
-      content,
-      htmlContent,
-      fontFamily,
-      lineHeight,
-      dropCap,
-      backgroundColor,
-      textColor,
-      backgroundType,
-      gradientColors,
-      gradientAngle,
-      paddingHorizontal,
-      paddingVertical,
-      shape,
-    ],
-  );
+  const config: RenderConfig = {
+    text: content,
+    htmlContent,
+    fontFamily,
+    lineHeight,
+    dropCap,
+    backgroundColor,
+    textColor,
+    backgroundType,
+    gradientColors,
+    gradientAngle,
+    paddingHorizontal,
+    paddingVertical,
+    shape,
+  };
 
-  // Get preview dimensions
-  const previewSize = PREVIEW_SIZES[shape];
-  const shapeData = shapes[shape];
+  // Calculate display size that fits the container while maintaining aspect ratio
+  const updateCanvasSize = useCallback(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const shapeData = shapes[shape];
+    const containerRect = container.getBoundingClientRect();
+
+    // Available space with padding
+    const maxWidth = containerRect.width - 48; // 24px padding each side
+    const maxHeight = containerRect.height - 48;
+
+    if (maxWidth <= 0 || maxHeight <= 0) return;
+
+    // Calculate scale to fit container
+    const scaleX = maxWidth / shapeData.width;
+    const scaleY = maxHeight / shapeData.height;
+    const displayScale = Math.min(scaleX, scaleY, 1); // Never scale up beyond 1:1
+
+    const displayWidth = Math.round(shapeData.width * displayScale);
+    const displayHeight = Math.round(shapeData.height * displayScale);
+
+    canvas.style.width = `${displayWidth}px`;
+    canvas.style.height = `${displayHeight}px`;
+  }, [shape]);
 
   // Render canvas whenever config changes
   useEffect(() => {
@@ -76,34 +75,52 @@ export function EditorCanvas() {
     document.fonts.ready.then(() => {
       requestAnimationFrame(() => {
         renderCanvas(canvas, config);
+        updateCanvasSize();
       });
     });
-  }, [config]);
+  }, [
+    content,
+    htmlContent,
+    fontFamily,
+    lineHeight,
+    dropCap,
+    backgroundColor,
+    textColor,
+    backgroundType,
+    gradientColors,
+    gradientAngle,
+    paddingHorizontal,
+    paddingVertical,
+    shape,
+    updateCanvasSize,
+  ]);
+
+  // Handle container resize
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver(() => {
+      updateCanvasSize();
+    });
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [updateCanvasSize]);
 
   return (
     <div
+      ref={containerRef}
       className="w-full h-full flex items-center justify-center overflow-hidden"
-      // style={{
-      //   backgroundColor: "hsl(0 0% 6%)",
-      // }}
     >
-      <div
-        className="flex items-center justify-center p-6"
-        style={{
-          width: "100%",
-          height: "100%",
-        }}
-      >
+      <div className="flex items-center justify-center p-6 w-full h-full">
         <canvas
           ref={canvasRef}
+          className="canvas-container"
           style={{
-            width: previewSize.width,
-            height: previewSize.height,
-            maxWidth: "100%",
-            maxHeight: "100%",
-            // objectFit: "contain",
-            // boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
-            borderRadius: "24px",
+            borderRadius: "12px",
+            boxShadow:
+              "0 8px 32px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2)",
           }}
         />
       </div>
