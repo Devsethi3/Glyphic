@@ -237,20 +237,23 @@ function drawPlaceholder(
 ): void {
   ctx.save();
 
-  const placeholderText = "Your text will appear here...";
-  // Scale placeholder font size relative to content width so it looks
-  // proportional across all shapes (square, portrait, landscape, vertical)
-  const fontSize = Math.max(contentWidth * 0.038, 22);
+  const placeholderText = "Start writing...";
 
-  ctx.font = `italic 400 ${fontSize}px "${config.fontFamily}", serif`;
+  // Use a larger font size — proportional to content width like body text
+  // but slightly smaller than the main body text would be
+  const baseFontSize = calculateBaseFontSize(config.shape, contentWidth);
+  const fontSize = baseFontSize * 0.85;
+
+  ctx.font = `400 ${fontSize}px "${config.fontFamily}", serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  // Use the theme text color at reduced opacity for clear visibility
+  // Use the exact theme text color at reduced opacity
+  // This ensures it looks correct on both light and dark backgrounds
   ctx.fillStyle = config.textColor;
-  ctx.globalAlpha = 0.4;
+  ctx.globalAlpha = 0.35;
 
-  // Center within the content area, not the full canvas
+  // Center within the content area
   const centerX = paddingX + contentWidth / 2;
   const centerY = paddingY + contentHeight / 2;
 
@@ -442,8 +445,20 @@ function processListItems(
     }
 
     orderIndex++;
-    if (nestedUl) processListItems(nestedUl as HTMLElement, "bullet-item", blocks, depth + 1);
-    if (nestedOl) processListItems(nestedOl as HTMLElement, "ordered-item", blocks, depth + 1);
+    if (nestedUl)
+      processListItems(
+        nestedUl as HTMLElement,
+        "bullet-item",
+        blocks,
+        depth + 1,
+      );
+    if (nestedOl)
+      processListItems(
+        nestedOl as HTMLElement,
+        "ordered-item",
+        blocks,
+        depth + 1,
+      );
   }
 }
 

@@ -217,12 +217,32 @@ export const useEditorStore = create<EditorState>()(
       setTextColor: (textColor) =>
         persistSet({ textColor, activePreset: null }),
 
-      setColorMode: (colorMode) => {
+      setColorMode: (mode) => {
         const state = get();
+
+        // If already in the requested mode, randomize within that mode
+        if (state.colorMode === mode) {
+          const palettes =
+            mode === "dark" ? colorPalettes.dark : colorPalettes.light;
+          const randomPalette =
+            palettes[Math.floor(Math.random() * palettes.length)];
+          persistSet({
+            backgroundColor: randomPalette.bg,
+            textColor: randomPalette.text,
+            activePreset: null,
+          });
+          return;
+        }
+
+        // Switching to the other mode — pick a random palette from that mode
+        const palettes =
+          mode === "dark" ? colorPalettes.dark : colorPalettes.light;
+        const randomPalette =
+          palettes[Math.floor(Math.random() * palettes.length)];
         persistSet({
-          colorMode,
-          backgroundColor: state.textColor,
-          textColor: state.backgroundColor,
+          colorMode: mode,
+          backgroundColor: randomPalette.bg,
+          textColor: randomPalette.text,
           activePreset: null,
         });
       },

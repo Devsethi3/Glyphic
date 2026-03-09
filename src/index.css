@@ -452,3 +452,13 @@ canvas {
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background-color: hsl(0 0% 30%);
 }
+
+.tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: currentColor;
+  opacity: 0.35;
+  pointer-events: none;
+  height: 0;
+  font-style: normal;
+}
