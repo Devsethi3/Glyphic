@@ -1,4 +1,3 @@
-// src/data/themes.ts
 import type { ThemePreset } from "@/types";
 
 export const themePresets: ThemePreset[] = [

@@ -1,4 +1,3 @@
-// src/components/editor/toolbar/kaomoji-picker.tsx
 import { useState } from "react";
 import { useEditorStore } from "@/store/editor-store";
 import { Button } from "@/components/ui/button";

@@ -1,4 +1,3 @@
-// src/components/editor/editor-header.tsx
 import { Link } from "react-router-dom";
 import { ShapeSelector } from "./header/shape-selector";
 import { ThemeSelector } from "./header/theme-selector";

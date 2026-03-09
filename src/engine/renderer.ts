@@ -1,4 +1,3 @@
-// src/engine/renderer.ts
 import type { RenderConfig } from "@/types";
 import { shapes } from "@/data/shapes";
 import { getLuminance } from "@/lib/utils";

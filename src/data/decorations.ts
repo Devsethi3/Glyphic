@@ -1,4 +1,3 @@
-// src/data/decorations.ts
 import type { DecorationCategory } from "@/types";
 
 export const decorationCategories: DecorationCategory[] = [

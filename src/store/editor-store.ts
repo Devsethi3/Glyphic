@@ -1,4 +1,3 @@
-// src/store/editor-store.ts
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import type { Editor } from "@tiptap/react";
@@ -13,9 +12,6 @@ import type {
 import { themePresets, colorPalettes } from "@/data/themes";
 import { getLuminance } from "@/lib/utils";
 
-// ============================================================
-// LOCAL STORAGE PERSISTENCE
-// ============================================================
 const STORAGE_KEY = "glyphic-editor-state";
 const STORAGE_VERSION = 1;
 
@@ -63,7 +59,6 @@ function savePersistedState(state: PersistedState): void {
   }
 }
 
-// Debounce helper
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 function debouncedSave(state: PersistedState): void {
   if (saveTimeout) clearTimeout(saveTimeout);
@@ -72,21 +67,15 @@ function debouncedSave(state: PersistedState): void {
   }, 300);
 }
 
-// ============================================================
 
 const persisted = loadPersistedState();
 
 interface EditorState {
-  // Content
   content: string;
   htmlContent: string;
-
-  // Typography
   fontFamily: FontFamily;
   lineHeight: number;
   dropCap: boolean;
-
-  // Theme
   backgroundColor: string;
   textColor: string;
   colorMode: ColorMode;
@@ -96,27 +85,15 @@ interface EditorState {
   gradientAngle: number;
   paperTexture: boolean;
   noiseIntensity: number;
-
-  // Padding
   paddingLocked: boolean;
   paddingHorizontal: number;
   paddingVertical: number;
-
-  // Shape
   shape: CanvasShape;
-
-  // Export
   exportQuality: ExportQuality;
   exportFormat: ExportFormat;
   exportThemeOverride: string | null;
-
-  // Editor reference
   editorRef: Editor | null;
-
-  // Hydration flag
   _hydrated: boolean;
-
-  // Actions
   setContent: (content: string) => void;
   setHtmlContent: (htmlContent: string) => void;
   setFontFamily: (fontFamily: FontFamily) => void;
@@ -167,20 +144,17 @@ function getStateToPersist(state: EditorState): PersistedState {
 
 export const useEditorStore = create<EditorState>()(
   subscribeWithSelector((set, get) => {
-    // Helper that sets state and triggers persistence
     const persistSet = (
       partial:
         | Partial<EditorState>
         | ((state: EditorState) => Partial<EditorState>),
     ) => {
       set(partial);
-      // Schedule save after state update
       const state = get();
       debouncedSave(getStateToPersist(state));
     };
 
     return {
-      // Initial state - merge with persisted
       content: persisted?.content ?? "",
       htmlContent: persisted?.htmlContent ?? "",
       fontFamily: persisted?.fontFamily ?? "EB Garamond",
@@ -205,7 +179,6 @@ export const useEditorStore = create<EditorState>()(
       paperTexture: persisted?.paperTexture ?? false,
       noiseIntensity: persisted?.noiseIntensity ?? 0.75,
 
-      // Actions with persistence
       setContent: (content) => persistSet({ content }),
       setHtmlContent: (htmlContent) => persistSet({ htmlContent }),
 
@@ -230,7 +203,6 @@ export const useEditorStore = create<EditorState>()(
       setColorMode: (mode) => {
         const state = get();
 
-        // If already in the requested mode, randomize within that mode
         if (state.colorMode === mode) {
           const palettes =
             mode === "dark" ? colorPalettes.dark : colorPalettes.light;
@@ -244,7 +216,6 @@ export const useEditorStore = create<EditorState>()(
           return;
         }
 
-        // Switching to the other mode — pick a random palette from that mode
         const palettes =
           mode === "dark" ? colorPalettes.dark : colorPalettes.light;
         const randomPalette =

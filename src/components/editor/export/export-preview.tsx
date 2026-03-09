@@ -1,4 +1,3 @@
-// src/components/editor/export/export-preview.tsx
 import { useEffect, useRef } from "react";
 import { renderCanvas } from "@/engine/renderer";
 import type { RenderConfig } from "@/types";
@@ -15,10 +14,8 @@ export function ExportPreview({ config, className }: ExportPreviewProps) {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Ensure fonts are loaded before rendering
     document.fonts.ready.then(() => {
       requestAnimationFrame(() => {
-        // Render at 2x scale for sharp preview
         renderCanvas(canvas, config, 2);
       });
     });

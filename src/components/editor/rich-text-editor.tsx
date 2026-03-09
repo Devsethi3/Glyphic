@@ -1,4 +1,3 @@
-// src/components/editor/rich-text-editor.tsx - Update the component
 import { useEffect, useRef } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
@@ -36,7 +35,7 @@ export function RichTextEditor({ isMobile = false }: { isMobile?: boolean }) {
       Placeholder.configure({
         placeholder: isMobile
           ? "Start writing..."
-          : "Start writing something beautiful...",
+          : "Every great design starts with a single word...",
       }),
       Typography,
       TextAlign.configure({
@@ -125,7 +124,6 @@ export function RichTextEditor({ isMobile = false }: { isMobile?: boolean }) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Only show BubbleMenu on desktop */}
       {isDesktop && (
         <BubbleMenu editor={editor} options={{ placement: "top" }}>
           <BubbleMenuBar editor={editor} />

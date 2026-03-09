@@ -1,4 +1,3 @@
-// src/data/shapes.ts
 import type { CanvasShape, ShapeDimensions } from "@/types";
 
 export const shapes: Record<CanvasShape, ShapeDimensions> = {

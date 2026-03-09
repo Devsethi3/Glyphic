@@ -1,4 +1,3 @@
-// src/components/editor/mobile-editor-toolbar.tsx
 import { useEditorStore } from "@/store/editor-store";
 import type { Editor } from "@tiptap/react";
 import { HugeiconsIcon } from "@hugeicons/react";

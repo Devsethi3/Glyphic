@@ -1,4 +1,3 @@
-// src/components/editor/header/shape-selector.tsx
 import { useEditorStore } from "@/store/editor-store";
 import { Button } from "@/components/ui/button";
 import {

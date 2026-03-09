@@ -79,7 +79,6 @@ export function ThemeSelector() {
     </div>
   );
 
-  // Desktop layout - EXACTLY like export dialog
   const DesktopContent = (
     <div className="space-y-4">
       <div className="relative">
@@ -107,7 +106,6 @@ export function ThemeSelector() {
     </div>
   );
 
-  // Mobile layout - following export dialog pattern
   const MobileContent = (
     <div className="flex flex-col h-full max-h-full overflow-hidden">
       <ScrollArea className="flex-1 h-full">

@@ -1,4 +1,3 @@
-// padding-controls.tsx
 import { useEditorStore } from "@/store/editor-store";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";

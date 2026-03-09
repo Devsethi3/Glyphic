@@ -5,25 +5,15 @@ import { motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface ScrubberProps {
-  /** Label displayed on the left side of the track */
   label?: string;
-  /** Controlled value */
   value?: number;
-  /** Default value for uncontrolled usage */
   defaultValue?: number;
-  /** Called when value changes during interaction */
   onValueChange?: (value: number) => void;
-  /** Minimum value */
   min?: number;
-  /** Maximum value */
   max?: number;
-  /** Step increment */
   step?: number;
-  /** Number of decimal places to display */
   decimals?: number;
-  /** Number of tick marks (0 to hide) */
   ticks?: number;
-  /** Additional CSS classes */
   className?: string;
 }
 
@@ -33,7 +23,6 @@ const clamp = (val: number, min: number, max: number) =>
 const roundToStep = (val: number, step: number, min: number) =>
   Math.round((val - min) / step) * step + min;
 
-// Helper function to check if device supports hover
 const getIsHoverDevice = () => {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -65,7 +54,6 @@ const Scrubber = ({
   const percentage = range > 0 ? ((value - min) / range) * 100 : 0;
   const isActive = isDragging || (isHoverDevice && isHovering);
 
-  // Only subscribe to changes, don't set initial state
   useEffect(() => {
     const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
     const onChange = (e: MediaQueryListEvent) => setIsHoverDevice(e.matches);

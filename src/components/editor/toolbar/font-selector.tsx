@@ -1,4 +1,3 @@
-// src/components/editor/toolbar/font-selector.tsx
 import { useEditorStore } from "@/store/editor-store";
 import {
   Select,
@@ -26,9 +25,6 @@ export function FontSelector() {
 
   return (
     <div className="space-y-1.5">
-      {/* <label className="text-[11px] text-muted-foreground font-medium">
-        Font
-      </label> */}
       <Select
         value={fontFamily}
         onValueChange={(v) => setFontFamily(v as FontFamily)}

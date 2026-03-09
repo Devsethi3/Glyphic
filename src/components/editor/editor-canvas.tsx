@@ -1,4 +1,3 @@
-// src/components/editor/editor-canvas.tsx
 import { useEffect, useRef, useCallback } from "react";
 import { useEditorStore } from "@/store/editor-store";
 import { renderCanvas } from "@/engine/renderer";
@@ -55,8 +54,6 @@ export function EditorCanvas({ isMobile = false }: EditorCanvasProps) {
     const shapeData = shapes[shape];
     const containerRect = container.getBoundingClientRect();
 
-    // Mobile: use full container size (no padding deduction)
-    // Desktop: subtract padding for better spacing
     const maxWidth = isMobile ? containerRect.width : containerRect.width - 48;
     const maxHeight = isMobile
       ? containerRect.height

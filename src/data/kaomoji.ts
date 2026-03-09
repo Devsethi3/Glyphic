@@ -1,4 +1,3 @@
-// src/data/kaomoji.ts
 import type { KaomojiCategory } from "@/types";
 
 export const kaomojiCategories: KaomojiCategory[] = [

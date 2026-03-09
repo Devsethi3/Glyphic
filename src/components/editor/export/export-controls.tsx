@@ -1,4 +1,3 @@
-// src/components/editor/export/export-controls.tsx
 import { Badge } from "@/components/ui/badge";
 import {
   Select,

@@ -1,4 +1,3 @@
-// src/components/editor/bubble-menu-bar.tsx
 import { useState, useCallback } from "react";
 import type { Editor } from "@tiptap/react";
 import { HugeiconsIcon } from "@hugeicons/react";

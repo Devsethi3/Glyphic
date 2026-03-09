@@ -1,4 +1,3 @@
-// src/types/index.ts
 export type CanvasShape = "square" | "portrait" | "landscape" | "vertical";
 export type ColorMode = "dark" | "light";
 export type ExportQuality = "standard" | "high" | "ultra";

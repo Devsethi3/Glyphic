@@ -1,4 +1,3 @@
-// src/contexts/theme-context.tsx
 import { createContext } from "react";
 
 type Theme = "dark" | "light" | "system";
