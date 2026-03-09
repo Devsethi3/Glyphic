@@ -1,25 +1,37 @@
 // src/components/editor/header/export-dialog.tsx
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useEditorStore } from "@/store/editor-store";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ImageDownloadIcon } from "@hugeicons/core-free-icons";
-import { exportCanvas } from "@/engine/renderer";
+import { ExportPreview } from "@/components/editor/export/export-preview";
+import { ExportControls } from "@/components/editor/export/export-controls";
+import { exportCanvasImage } from "@/lib/export-utils";
 import { themePresets } from "@/data/themes";
-import type { ExportQuality, ExportFormat, RenderConfig } from "@/types";
-import { cn } from "@/lib/utils";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import type { RenderConfig } from "@/types";
 
 export function ExportDialog() {
   const [open, setOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const exportQuality = useEditorStore((s) => s.exportQuality);
   const exportFormat = useEditorStore((s) => s.exportFormat);
@@ -44,13 +56,11 @@ export function ExportDialog() {
   const paddingHorizontal = useEditorStore((s) => s.paddingHorizontal);
   const paddingVertical = useEditorStore((s) => s.paddingVertical);
   const shape = useEditorStore((s) => s.shape);
+  const paperTexture = useEditorStore((s) => s.paperTexture);
+  const noiseIntensity = useEditorStore((s) => s.noiseIntensity);
 
-  const handleExport = async () => {
-    setIsExporting(true);
-
-    // Wait for fonts to be ready
-    await document.fonts.ready;
-
+  // Build preview config with theme override
+  const previewConfig: RenderConfig = useMemo(() => {
     let config: RenderConfig = {
       text: content,
       htmlContent,
@@ -65,6 +75,8 @@ export function ExportDialog() {
       paddingHorizontal,
       paddingVertical,
       shape,
+      paperTexture,
+      noiseIntensity,
     };
 
     // Apply theme override if selected
@@ -81,138 +93,169 @@ export function ExportDialog() {
           backgroundType: preset.backgroundType,
           gradientColors: preset.gradientColors || [],
           gradientAngle: preset.gradientAngle || 0,
+          paperTexture: preset.paperTexture ?? config.paperTexture,
         };
       }
     }
 
-    // Small delay to ensure UI updates
-    setTimeout(() => {
-      exportCanvas(config, exportQuality, exportFormat);
-      setIsExporting(false);
+    return config;
+  }, [
+    content,
+    htmlContent,
+    fontFamily,
+    lineHeight,
+    dropCap,
+    backgroundColor,
+    textColor,
+    backgroundType,
+    gradientColors,
+    gradientAngle,
+    paddingHorizontal,
+    paddingVertical,
+    shape,
+    paperTexture,
+    noiseIntensity,
+    exportThemeOverride,
+  ]);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await exportCanvasImage(previewConfig, exportQuality, exportFormat);
       setOpen(false);
-    }, 100);
+    } catch (error) {
+      console.error("Export failed:", error);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
-  const qualityOptions: {
-    value: ExportQuality;
-    label: string;
-    size: string;
-  }[] = [
-    { value: "standard", label: "Standard", size: "2x" },
-    { value: "high", label: "High", size: "3x" },
-    { value: "ultra", label: "Ultra", size: "4x" },
-  ];
+  const canExport = content.trim().length > 0;
+
+  // Desktop layout - two columns with preview on right
+  const DesktopContent = (
+    <div className="grid grid-cols-2 gap-6">
+      {/* Left Column - Controls */}
+      <div className="space-y-6">
+        <ExportControls
+          quality={exportQuality}
+          format={exportFormat}
+          themeOverride={exportThemeOverride}
+          onQualityChange={setExportQuality}
+          onFormatChange={setExportFormat}
+          onThemeOverrideChange={setExportThemeOverride}
+        />
+
+        <Button
+          onClick={handleExport}
+          className="w-full"
+          disabled={isExporting || !canExport}
+          size="lg"
+        >
+          {isExporting
+            ? "Exporting..."
+            : `Export ${exportFormat.toUpperCase()}`}
+        </Button>
+
+        {!canExport && (
+          <p className="text-xs text-muted-foreground text-center">
+            Write some text to enable export
+          </p>
+        )}
+      </div>
+
+      {/* Right Column - Preview */}
+      <div className="space-y-2">
+        <label className="text-xs font-medium text-muted-foreground">
+          Preview
+        </label>
+        <ExportPreview config={previewConfig} />
+      </div>
+    </div>
+  );
+
+  // Mobile layout - stacked with scrollable area
+  const MobileContent = (
+    <ScrollArea className="h-[calc(85vh-8rem)]">
+      <div className="space-y-6 px-4 pb-4">
+        {/* Preview First on Mobile */}
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-muted-foreground">
+            Preview
+          </label>
+          <ExportPreview config={previewConfig} />
+        </div>
+
+        {/* Controls */}
+        <ExportControls
+          quality={exportQuality}
+          format={exportFormat}
+          themeOverride={exportThemeOverride}
+          onQualityChange={setExportQuality}
+          onFormatChange={setExportFormat}
+          onThemeOverrideChange={setExportThemeOverride}
+        />
+
+        {/* Export Button */}
+        <Button
+          onClick={handleExport}
+          className="w-full"
+          disabled={isExporting || !canExport}
+          size="lg"
+        >
+          {isExporting
+            ? "Exporting..."
+            : `Export ${exportFormat.toUpperCase()}`}
+        </Button>
+
+        {!canExport && (
+          <p className="text-xs text-muted-foreground text-center">
+            Write some text to enable export
+          </p>
+        )}
+      </div>
+    </ScrollArea>
+  );
+
+  if (isDesktop) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button size="sm" className="h-8 text-xs gap-1.5">
+            <HugeiconsIcon icon={ImageDownloadIcon} size={14} />
+            <span>Export</span>
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-4xl!">
+          <DialogHeader>
+            <DialogTitle>Export Image</DialogTitle>
+            <DialogDescription>
+              Configure and download your design
+            </DialogDescription>
+          </DialogHeader>
+          {DesktopContent}
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
         <Button size="sm" className="h-8 text-xs gap-1.5">
           <HugeiconsIcon icon={ImageDownloadIcon} size={14} />
           <span>Export</span>
         </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Export Image</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-xs text-muted-foreground">Quality</label>
-            <div className="flex gap-2">
-              {qualityOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setExportQuality(option.value)}
-                  className={cn(
-                    "flex-1 py-2 text-xs rounded-md border transition-colors flex flex-col items-center gap-0.5",
-                    exportQuality === option.value
-                      ? "bg-foreground text-background border-foreground"
-                      : "border-input hover:bg-accent",
-                  )}
-                >
-                  <span className="capitalize">{option.label}</span>
-                  <span
-                    className={cn(
-                      "text-[10px]",
-                      exportQuality === option.value
-                        ? "text-background/70"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    {option.size}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs text-muted-foreground">
-              Override theme
-            </label>
-            <select
-              value={exportThemeOverride || ""}
-              onChange={(e) => setExportThemeOverride(e.target.value || null)}
-              className="w-full h-9 px-3 text-sm rounded-md border border-input bg-transparent focus:outline-none focus:ring-1 focus:ring-ring"
-            >
-              <option value="">No override</option>
-              {themePresets.map((theme) => (
-                <option key={theme.id} value={theme.id}>
-                  {theme.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs text-muted-foreground">Format</label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setExportFormat("png")}
-                className={cn(
-                  "flex-1 py-2 text-xs rounded-md border transition-colors",
-                  exportFormat === "png"
-                    ? "bg-foreground text-background border-foreground"
-                    : "border-input hover:bg-accent",
-                )}
-              >
-                PNG
-              </button>
-              <button
-                onClick={() => setExportFormat("svg")}
-                className={cn(
-                  "flex-1 py-2 text-xs rounded-md border transition-colors flex items-center justify-center gap-1.5",
-                  exportFormat === "svg"
-                    ? "bg-foreground text-background border-foreground"
-                    : "border-input hover:bg-accent",
-                )}
-              >
-                SVG
-                <Badge variant="secondary" className="text-[9px] px-1 py-0">
-                  beta
-                </Badge>
-              </button>
-            </div>
-          </div>
-
-          <Button
-            onClick={handleExport}
-            className="w-full"
-            disabled={isExporting || !content.trim()}
-          >
-            {isExporting
-              ? "Exporting..."
-              : `Export ${exportFormat.toUpperCase()}`}
-          </Button>
-
-          {!content.trim() && (
-            <p className="text-xs text-muted-foreground text-center">
-              Write some text to enable export
-            </p>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+      </DrawerTrigger>
+      <DrawerContent className="max-h-[90vh]">
+        <DrawerHeader className="text-left px-4">
+          <DrawerTitle>Export Image</DrawerTitle>
+          <DrawerDescription>
+            Configure and download your design
+          </DrawerDescription>
+        </DrawerHeader>
+        {MobileContent}
+      </DrawerContent>
+    </Drawer>
   );
 }

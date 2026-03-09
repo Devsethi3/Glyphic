@@ -3,9 +3,8 @@ import { useEditorStore } from "@/store/editor-store";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  LockedIcon,
+  SquareLock02Icon,
   SquareUnlock02Icon,
-  BorderAllIcon,
 } from "@hugeicons/core-free-icons";
 import {
   Popover,
@@ -61,7 +60,7 @@ export function PaddingControls() {
               onClick={() => setPaddingLocked(!paddingLocked)}
             >
               <HugeiconsIcon
-                icon={paddingLocked ? LockedIcon : SquareUnlock02Icon}
+                icon={paddingLocked ? SquareLock02Icon : SquareUnlock02Icon}
                 size={14}
               />
             </Button>

@@ -43,7 +43,7 @@ export function LandingPage() {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" asChild>
+            <Button asChild>
               <Link to="/editor">Open Editor</Link>
             </Button>
           </div>
@@ -83,7 +83,7 @@ export function LandingPage() {
               </Button>
               <Button variant="link" size="lg" asChild>
                 <a
-                  href="https://github.com"
+                  href="https://github.com/Devsethi3/Glyphic"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="gap-2"
@@ -96,9 +96,9 @@ export function LandingPage() {
           </div>
 
 
-          <div className="mt-16 sm:mt-20 flex flex-col sm:flex-row items-start sm:items-center gap-4 text-xs text-muted-foreground/60">
+          <div className="mt-16 flex flex-col sm:flex-row items-start sm:items-center gap-4 text-xs text-muted-foreground/60">
             <div className="flex items-center gap-3">
-              <div className="flex -space-x-1.5">
+              {/* <div className="flex -space-x-1.5">
                 {["🟣", "🔵", "🟢", "🟡"].map((dot, i) => (
                   <div
                     key={i}
@@ -107,7 +107,7 @@ export function LandingPage() {
                     {dot}
                   </div>
                 ))}
-              </div>
+              </div> */}
               <span>No sign-up. No watermarks. No catch.</span>
             </div>
             <span className="hidden sm:inline text-muted-foreground/30">·</span>

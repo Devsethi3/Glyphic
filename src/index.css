@@ -158,6 +158,10 @@
   }
 }
 
+::-webkit-scrollbar {
+  display: none;
+}
+
 /* Font imports - self hosted */
 @font-face {
   font-family: "EB Garamond";
