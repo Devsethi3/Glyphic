@@ -30,7 +30,7 @@ function ShapeIcon({ shape, active }: { shape: CanvasShape; active: boolean }) {
   return (
     <div
       className={cn(
-        "border-2 rounded-sm transition-colors",
+        "border-2 rounded-xs transition-colors",
         active ? "border-foreground" : "border-muted-foreground/50",
       )}
       style={{

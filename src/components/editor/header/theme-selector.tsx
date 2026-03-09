@@ -1,4 +1,3 @@
-// src/components/editor/header/theme-selector.tsx
 import { useState, useMemo } from "react";
 import { useEditorStore } from "@/store/editor-store";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PaintBrush01Icon, Search01Icon } from "@hugeicons/core-free-icons";
+import { PaintBoardIcon, Search01Icon } from "@hugeicons/core-free-icons";
 import { themePresets } from "@/data/themes";
 import { cn } from "@/lib/utils";
 
@@ -37,18 +36,18 @@ export function ThemeSelector() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
-        <Button variant="ghost" size="sm" className="h-8 text-xs gap-1.5">
-          <HugeiconsIcon icon={PaintBrush01Icon} size={14} />
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-8 gap-1.5">
+          <HugeiconsIcon icon={PaintBoardIcon} size={14} />
           <span>Themes</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-xl! w-full h-[80vh] flex flex-col gap-3 p-6 overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Choose theme</DialogTitle>
         </DialogHeader>
 
-        <div className="relative">
+        <div className="relative flex-shrink-0">
           <HugeiconsIcon
             icon={Search01Icon}
             size={14}
@@ -62,36 +61,40 @@ export function ThemeSelector() {
           />
         </div>
 
-        <p className="text-xs text-muted-foreground">Default themes</p>
+        <p className="text-xs text-muted-foreground flex-shrink-0">
+          Default themes
+        </p>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
-          <div className="grid grid-cols-2 gap-3 pb-4">
-            {filteredThemes.map((theme) => (
-              <button
-                key={theme.id}
-                onClick={() => handleSelectTheme(theme.id)}
-                className={cn(
-                  "rounded-lg border p-4 text-left transition-colors",
-                  activePreset === theme.id
-                    ? "border-foreground/50 ring-1 ring-foreground/30"
-                    : "border-border hover:border-foreground/30",
-                )}
-                style={{
-                  backgroundColor: theme.backgroundColor,
-                  color: theme.textColor,
-                }}
-              >
-                <p className="text-[10px] opacity-60 mb-1">{theme.name}</p>
-                <p
-                  style={{ fontFamily: theme.fontFamily }}
-                  className="text-sm leading-relaxed"
+        <div className="flex-1 min-h-0">
+          <ScrollArea className="h-full">
+            <div className="grid grid-cols-2 gap-3 pr-4 pb-4">
+              {filteredThemes.map((theme) => (
+                <button
+                  key={theme.id}
+                  onClick={() => handleSelectTheme(theme.id)}
+                  className={cn(
+                    "rounded-lg border p-4 text-left transition-colors",
+                    activePreset === theme.id
+                      ? "border-foreground/50 ring-1 ring-foreground/30"
+                      : "border-border hover:border-foreground/30",
+                  )}
+                  style={{
+                    backgroundColor: theme.backgroundColor,
+                    color: theme.textColor,
+                  }}
                 >
-                  The quick brown fox jumps over the lazy dog.
-                </p>
-              </button>
-            ))}
-          </div>
-        </ScrollArea>
+                  <p className="text-[10px] opacity-60 mb-1">{theme.name}</p>
+                  <p
+                    style={{ fontFamily: theme.fontFamily }}
+                    className="text-sm leading-relaxed"
+                  >
+                    The quick brown fox jumps over the lazy dog.
+                  </p>
+                </button>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );

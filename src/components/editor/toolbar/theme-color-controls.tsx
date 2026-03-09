@@ -1,7 +1,13 @@
+// src/components/editor/toolbar/theme-color-controls.tsx
 import { useEditorStore } from "@/store/editor-store";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ShuffleIcon, Moon02Icon, Sun03Icon } from "@hugeicons/core-free-icons";
+import {
+  ShuffleIcon,
+  Moon02Icon,
+  Sun03Icon,
+  ScrollIcon,
+} from "@hugeicons/core-free-icons";
 import {
   Popover,
   PopoverContent,
@@ -19,9 +25,11 @@ export function ThemeColorControls() {
   const backgroundColor = useEditorStore((s) => s.backgroundColor);
   const textColor = useEditorStore((s) => s.textColor);
   const colorMode = useEditorStore((s) => s.colorMode);
+  const paperTexture = useEditorStore((s) => s.paperTexture);
   const setBackgroundColor = useEditorStore((s) => s.setBackgroundColor);
   const setTextColor = useEditorStore((s) => s.setTextColor);
   const setColorMode = useEditorStore((s) => s.setColorMode);
+  const setPaperTexture = useEditorStore((s) => s.setPaperTexture);
   const randomizeTheme = useEditorStore((s) => s.randomizeTheme);
 
   return (
@@ -106,6 +114,20 @@ export function ThemeColorControls() {
               />
             </div>
           </div>
+
+          {/* Paper Texture Toggle */}
+          <button
+            onClick={() => setPaperTexture(!paperTexture)}
+            className={cn(
+              "w-full py-2.5 text-xs rounded-md flex items-center justify-center gap-2 transition-colors border",
+              paperTexture
+                ? "bg-secondary text-foreground border-secondary"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50 border-input",
+            )}
+          >
+            <HugeiconsIcon icon={ScrollIcon} size={14} />
+            Paper Texture
+          </button>
 
           <div className="flex gap-2">
             <button

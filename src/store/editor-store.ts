@@ -39,6 +39,7 @@ interface PersistedState {
   shape: CanvasShape;
   exportQuality: ExportQuality;
   exportFormat: ExportFormat;
+  paperTexture: boolean;
 }
 
 function loadPersistedState(): Partial<PersistedState> | null {
@@ -92,6 +93,8 @@ interface EditorState {
   backgroundType: BackgroundType;
   gradientColors: string[];
   gradientAngle: number;
+  paperTexture: boolean;
+  setPaperTexture: (enabled: boolean) => void;
 
   // Padding
   paddingLocked: boolean;
@@ -138,6 +141,7 @@ function getStateToPersist(state: EditorState): PersistedState {
     version: STORAGE_VERSION,
     content: state.content,
     htmlContent: state.htmlContent,
+    paperTexture: state.paperTexture,
     fontFamily: state.fontFamily,
     lineHeight: state.lineHeight,
     dropCap: state.dropCap,
@@ -174,6 +178,7 @@ export const useEditorStore = create<EditorState>()(
     return {
       // Initial state - merge with persisted
       content: persisted?.content ?? "",
+      paperTexture: persisted?.paperTexture ?? false,
       htmlContent: persisted?.htmlContent ?? "",
       fontFamily: persisted?.fontFamily ?? "EB Garamond",
       lineHeight: persisted?.lineHeight ?? 1.7,
@@ -196,6 +201,8 @@ export const useEditorStore = create<EditorState>()(
       _hydrated: !!persisted,
 
       // Actions with persistence
+      setPaperTexture: (paperTexture) =>
+        persistSet({ paperTexture, activePreset: null }),
       setContent: (content) => persistSet({ content }),
       setHtmlContent: (htmlContent) => persistSet({ htmlContent }),
 
@@ -269,6 +276,7 @@ export const useEditorStore = create<EditorState>()(
 
         persistSet({
           fontFamily: preset.fontFamily,
+          paperTexture: preset.paperTexture ?? false,
           lineHeight: preset.lineHeight,
           dropCap: preset.dropCap,
           backgroundColor: preset.backgroundColor,

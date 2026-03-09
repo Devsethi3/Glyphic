@@ -1,6 +1,7 @@
 // src/engine/renderer.ts
 import type { RenderConfig } from "@/types";
 import { shapes } from "@/data/shapes";
+import { getLuminance } from "@/lib/utils";
 
 // ============================================================
 // FONT SIZE CONFIGURATION
@@ -138,6 +139,12 @@ export function renderCanvas(
   const baseHeight = shapeData.height;
 
   drawBackground(ctx, config, baseWidth, baseHeight);
+
+  // Draw paper texture after background, before text
+  if (config.paperTexture) {
+    const luminance = getLuminance(config.backgroundColor);
+    drawPaperTexture(ctx, baseWidth, baseHeight, luminance < 0.5);
+  }
 
   const paddingX = (config.paddingHorizontal / 100) * baseWidth;
   const paddingY = (config.paddingVertical / 100) * baseHeight;
@@ -279,6 +286,67 @@ function extractStyleProperty(style: string, property: string): string | null {
     }
   }
   return null;
+}
+
+// ---- Paper Noise Texture ----
+
+let noiseCanvas: HTMLCanvasElement | null = null;
+let noiseWidth = 0;
+let noiseHeight = 0;
+
+function getNoiseCanvas(width: number, height: number): HTMLCanvasElement {
+  // Cache the noise canvas — regenerate only if size changes
+  if (noiseCanvas && noiseWidth === width && noiseHeight === height) {
+    return noiseCanvas;
+  }
+
+  noiseCanvas = document.createElement("canvas");
+  noiseCanvas.width = width;
+  noiseCanvas.height = height;
+  noiseWidth = width;
+  noiseHeight = height;
+
+  const ctx = noiseCanvas.getContext("2d");
+  if (!ctx) return noiseCanvas;
+
+  const imageData = ctx.createImageData(width, height);
+  const data = imageData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    // Generate subtle grain — random grayscale value
+    const grain = Math.random() * 255;
+    data[i] = grain; // R
+    data[i + 1] = grain; // G
+    data[i + 2] = grain; // B
+    data[i + 3] = 255; // A (full, we control opacity via globalAlpha)
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  return noiseCanvas;
+}
+
+function drawPaperTexture(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  isDarkBackground: boolean,
+): void {
+  ctx.save();
+
+  // Use a noise pattern at very low opacity
+  // Lighter on dark backgrounds, darker on light backgrounds
+  const opacity = isDarkBackground ? 0.06 : 0.04;
+  ctx.globalAlpha = opacity;
+
+  // Use "overlay" for dark backgrounds (adds subtle light grain)
+  // Use "multiply" for light backgrounds (adds subtle dark grain)
+  ctx.globalCompositeOperation = isDarkBackground ? "overlay" : "multiply";
+
+  const noise = getNoiseCanvas(Math.ceil(width), Math.ceil(height));
+
+  ctx.drawImage(noise, 0, 0, width, height);
+
+  ctx.restore();
 }
 
 // ---- HTML Parsing ----
@@ -1305,6 +1373,12 @@ export function exportCanvas(
   ctx.scale(scale, scale);
 
   drawBackground(ctx, config, shapeData.width, shapeData.height);
+
+  // Paper texture for exports too
+  if (config.paperTexture) {
+    const luminance = getLuminance(config.backgroundColor);
+    drawPaperTexture(ctx, shapeData.width, shapeData.height, luminance < 0.5);
+  }
 
   const paddingX = (config.paddingHorizontal / 100) * shapeData.width;
   const paddingY = (config.paddingVertical / 100) * shapeData.height;

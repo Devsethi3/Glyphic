@@ -22,6 +22,7 @@ export function EditorCanvas() {
   const paddingHorizontal = useEditorStore((s) => s.paddingHorizontal);
   const paddingVertical = useEditorStore((s) => s.paddingVertical);
   const shape = useEditorStore((s) => s.shape);
+  const paperTexture = useEditorStore((s) => s.paperTexture);
 
   const config: RenderConfig = {
     text: content,
@@ -37,6 +38,7 @@ export function EditorCanvas() {
     paddingHorizontal,
     paddingVertical,
     shape,
+    paperTexture,
   };
 
   const updateCanvasSize = useCallback(() => {
@@ -87,6 +89,7 @@ export function EditorCanvas() {
     paddingHorizontal,
     paddingVertical,
     shape,
+    paperTexture,
     updateCanvasSize,
   ]);
 

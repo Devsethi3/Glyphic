@@ -22,6 +22,7 @@ export interface ThemePreset {
   fontFamily: FontFamily;
   backgroundColor: string;
   textColor: string;
+  paperTexture?: boolean;
   lineHeight: number;
   dropCap: boolean;
   backgroundType: BackgroundType;
@@ -80,6 +81,7 @@ export interface RenderConfig {
   fontFamily: FontFamily;
   lineHeight: number;
   dropCap: boolean;
+  paperTexture: boolean;
   backgroundColor: string;
   textColor: string;
   backgroundType: BackgroundType;
