@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@repo/shadcn-ui/lib/utils";
+import { cn } from "@/lib/utils";
 import { motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -156,8 +156,8 @@ const Scrubber = ({
         ref={trackRef}
         role="slider"
         style={{
-          height: 52,
-          borderRadius: 12,
+          height: 30,
+          borderRadius: 5,
           touchAction: "none",
         }}
         tabIndex={0}
@@ -166,7 +166,7 @@ const Scrubber = ({
         <div
           className="pointer-events-none absolute inset-y-0 left-0 bg-foreground/14"
           style={{
-            borderRadius: 12,
+            borderRadius: 5,
             width: `${percentage}%`,
             transition: isDragging
               ? "none"

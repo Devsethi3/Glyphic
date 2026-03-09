@@ -1,5 +1,4 @@
 import { useEditorStore } from "@/store/editor-store";
-import { Slider } from "@/components/ui/slider";
 import {
   Popover,
   PopoverContent,
@@ -14,6 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import Scrubber from "@/components/smoothui/scrubber";
 
 export function LineHeightControl() {
   const lineHeight = useEditorStore((s) => s.lineHeight);
@@ -40,7 +40,7 @@ export function LineHeightControl() {
       </TooltipProvider>
 
       <PopoverContent
-        className="w-64 p-4"
+        className="w-72 p-3"
         align="start"
         side="bottom"
         sideOffset={4}
@@ -52,15 +52,15 @@ export function LineHeightControl() {
               {lineHeight.toFixed(1)}
             </span>
           </div>
-          <Slider
-            value={[lineHeight]}
-            onValueChange={(value) =>
-              setLineHeight(Array.isArray(value) ? value[0] : value)
-            }
+          <Scrubber
+            label=""
+            value={lineHeight}
+            onValueChange={setLineHeight}
             min={1.0}
             max={2.5}
             step={0.1}
-            className="w-full"
+            decimals={1}
+            ticks={5}
           />
         </div>
       </PopoverContent>
