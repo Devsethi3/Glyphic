@@ -225,11 +225,26 @@
   font-style: normal;
   font-display: swap;
 }
+
+/* Replace the existing tiptap-editor .ProseMirror rule and add font inheritance fix */
+
 /* Tiptap Editor Styles */
 .tiptap-editor .ProseMirror {
   outline: none;
   min-height: 200px;
   padding: 0;
+  /* Force font inheritance - prevents pasted content from using system/monospace fonts */
+  font-family: inherit !important;
+}
+
+/* Ensure all pasted content inherits the editor font */
+.tiptap-editor .ProseMirror * {
+  font-family: inherit;
+}
+
+/* Override any inline font-family styles from pasted content */
+.tiptap-editor .ProseMirror [style*="font-family"] {
+  font-family: inherit !important;
 }
 
 .tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
@@ -320,6 +335,40 @@
   list-style-type: decimal;
 }
 
+.tiptap-editor .ProseMirror sub {
+  font-size: 0.75em;
+  vertical-align: sub;
+}
+
+.tiptap-editor .ProseMirror sup {
+  font-size: 0.75em;
+  vertical-align: super;
+}
+
+/* Small Caps */
+.tiptap-editor .ProseMirror span[style*="font-variant: small-caps"] {
+  font-variant: small-caps;
+}
+
+/* Text opacity */
+.tiptap-editor .ProseMirror span[style*="opacity"] {
+  transition: opacity 0.15s ease;
+}
+
+/* Highlight marks */
+.tiptap-editor .ProseMirror mark {
+  border-radius: 2px;
+  padding: 1px 2px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* Colored text */
+.tiptap-editor .ProseMirror span[style*="color"] {
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
 /* Editor responsive styles */
 @media (max-width: 1024px) {
   .tiptap-editor .ProseMirror {
@@ -331,6 +380,18 @@
   .tiptap-editor .ProseMirror {
     min-height: 200px;
   }
+}
+
+/* Editor panel transitions */
+.tiptap-editor {
+  transition: opacity 0.15s ease;
+}
+
+/* Ensure text renders sharply */
+.tiptap-editor .ProseMirror {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 /* Ensure proper scrolling behavior */
@@ -390,50 +451,4 @@ canvas {
 
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background-color: hsl(0 0% 30%);
-}
-
-/* Editor panel transitions */
-.tiptap-editor {
-  transition: opacity 0.15s ease;
-}
-
-/* Ensure text renders sharply */
-.tiptap-editor .ProseMirror {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
-
-.tiptap-editor .ProseMirror sub {
-  font-size: 0.75em;
-  vertical-align: sub;
-}
-
-.tiptap-editor .ProseMirror sup {
-  font-size: 0.75em;
-  vertical-align: super;
-}
-
-/* Small Caps */
-.tiptap-editor .ProseMirror span[style*="font-variant: small-caps"] {
-  font-variant: small-caps;
-}
-
-/* Text opacity */
-.tiptap-editor .ProseMirror span[style*="opacity"] {
-  transition: opacity 0.15s ease;
-}
-
-/* Highlight marks */
-.tiptap-editor .ProseMirror mark {
-  border-radius: 2px;
-  padding: 1px 2px;
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
-}
-
-/* Colored text */
-.tiptap-editor .ProseMirror span[style*="color"] {
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
 }

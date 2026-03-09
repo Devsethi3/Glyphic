@@ -83,7 +83,7 @@ const OPACITY_LEVELS = [
   { label: "Reset", value: "" },
 ];
 
-function Separator() {
+function Sep() {
   return <div className="w-px h-4 bg-border mx-0.5 shrink-0" />;
 }
 
@@ -110,12 +110,20 @@ function MenuButton({
         <Button
           variant="ghost"
           size="icon"
+          type="button"
           className={cn(
             "h-7 w-7 p-0 shrink-0",
             isActive && "bg-accent text-accent-foreground",
             className,
           )}
-          onClick={onClick}
+          onMouseDown={(e) => {
+            // Prevent the bubble menu from stealing focus
+            e.preventDefault();
+          }}
+          onClick={(e) => {
+            e.preventDefault();
+            onClick();
+          }}
         >
           {icon ? <HugeiconsIcon icon={icon} size={14} /> : children}
         </Button>
@@ -153,6 +161,7 @@ function ColorPickerGrid({
           <Tooltip key={color.label}>
             <TooltipTrigger asChild>
               <button
+                type="button"
                 className={cn(
                   "w-6 h-6 rounded-md border transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1",
                   activeColor === color.value &&
@@ -198,11 +207,11 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
   }, [editor]);
 
   const handleToggleSmallCaps = useCallback(() => {
-    // Toggle small-caps via inline style span
     const currentAttrs = editor.getAttributes("textStyle");
     const hasSmallCaps = currentAttrs?.fontVariant === "small-caps";
 
     if (hasSmallCaps) {
+      // Remove small caps - unset the textStyle mark entirely if no other attrs
       editor.chain().focus().setMark("textStyle", { fontVariant: null }).run();
     } else {
       editor
@@ -215,8 +224,7 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
 
   const handleSetOpacity = useCallback(
     (opacity: string) => {
-      if (!opacity) {
-        // Reset - remove opacity
+      if (!opacity || opacity === "1") {
         editor.chain().focus().setMark("textStyle", { opacity: null }).run();
       } else {
         editor.chain().focus().setMark("textStyle", { opacity }).run();
@@ -265,9 +273,9 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
           onClick={handleSetParagraph}
         />
 
-        <Separator />
+        <Sep />
 
-        {/* Basic formatting */}
+        {/* Basic formatting - these work directly on any text type */}
         <MenuButton
           icon={TextBoldIcon}
           title="Bold"
@@ -296,9 +304,9 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
           onClick={() => editor.chain().focus().toggleStrike().run()}
         />
 
-        <Separator />
+        <Sep />
 
-        {/* Subscript / Superscript */}
+        {/* Sub/Superscript */}
         <MenuButton
           icon={ArrowDown01Icon}
           title="Subscript"
@@ -325,7 +333,7 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
           </span>
         </MenuButton>
 
-        <Separator />
+        <Sep />
 
         {/* Headings */}
         <MenuButton
@@ -353,7 +361,7 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
           }
         />
 
-        <Separator />
+        <Sep />
 
         {/* Blockquote */}
         <MenuButton
@@ -363,7 +371,7 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
         />
 
-        <Separator />
+        <Sep />
 
         {/* Alignment */}
         <MenuButton
@@ -385,7 +393,7 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
           onClick={() => editor.chain().focus().setTextAlign("right").run()}
         />
 
-        <Separator />
+        <Sep />
 
         {/* Text Opacity */}
         <Popover open={opacityOpen} onOpenChange={setOpacityOpen}>
@@ -395,9 +403,12 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
                 <Button
                   variant="ghost"
                   size="icon"
+                  type="button"
                   className={cn(
-                    "h-7 w-7 p-0 shrink-0 relative",
-                    currentOpacity && currentOpacity !== "1" && "bg-accent",
+                    "h-7 w-7 p-0 shrink-0",
+                    currentOpacity &&
+                      currentOpacity !== "1" &&
+                      "bg-accent text-accent-foreground",
                   )}
                 >
                   <span className="text-[10px] font-bold leading-none">%</span>
@@ -421,6 +432,7 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
               {OPACITY_LEVELS.map((level) => (
                 <button
                   key={level.label}
+                  type="button"
                   className={cn(
                     "flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-accent transition-colors text-left min-w-[100px]",
                     (level.value === currentOpacity ||
@@ -450,7 +462,7 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
           </PopoverContent>
         </Popover>
 
-        <Separator />
+        <Sep />
 
         {/* Text Color */}
         <Popover open={textColorOpen} onOpenChange={setTextColorOpen}>
@@ -460,6 +472,7 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
                 <Button
                   variant="ghost"
                   size="icon"
+                  type="button"
                   className="h-7 w-7 p-0 shrink-0 relative"
                 >
                   <HugeiconsIcon icon={PaintBrushIcon} size={14} />
@@ -499,6 +512,7 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
                 <Button
                   variant="ghost"
                   size="icon"
+                  type="button"
                   className="h-7 w-7 p-0 shrink-0 relative"
                 >
                   <HugeiconsIcon icon={DropletIcon} size={14} />
@@ -533,7 +547,7 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
           </PopoverContent>
         </Popover>
 
-        <Separator />
+        <Sep />
 
         {/* Clear Formatting */}
         <MenuButton
