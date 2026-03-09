@@ -1,12 +1,7 @@
 import { useEditorStore } from "@/store/editor-store";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  ShuffleIcon,
-  Moon02Icon,
-  Sun03Icon,
-  GroupLayersIcon,
-} from "@hugeicons/core-free-icons";
+import { ShuffleIcon, Moon02Icon, Sun03Icon } from "@hugeicons/core-free-icons";
 import {
   Popover,
   PopoverContent,
@@ -36,7 +31,14 @@ export function ThemeColorControls() {
           <TooltipTrigger asChild>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 px-2.5">
-                <HugeiconsIcon icon={GroupLayersIcon} size={16} />
+                <span
+                  className="h-3 w-3 rounded-full border border-input"
+                  style={{ backgroundColor: backgroundColor }}
+                />
+                <span
+                  className="h-3 w-3 rounded-full border border-input -ml-1.5"
+                  style={{ backgroundColor: textColor }}
+                />
               </Button>
             </PopoverTrigger>
           </TooltipTrigger>
