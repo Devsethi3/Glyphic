@@ -148,7 +148,7 @@ export function renderCanvas(
       baseWidth,
       baseHeight,
       luminance < 0.5,
-      config.noiseIntensity, // Pass the intensity
+      config.noiseIntensity,
     );
   }
 
@@ -293,26 +293,37 @@ function extractStyleProperty(style: string, property: string): string | null {
   }
   return null;
 }
-// ---- Paper Noise Texture ----
+
+// Paper noise texture
 
 let noiseCanvas: HTMLCanvasElement | null = null;
 let noiseWidth = 0;
 let noiseHeight = 0;
+let lastIntensity = 0;
 
 function getNoiseCanvas(
   width: number,
   height: number,
   intensity: number,
 ): HTMLCanvasElement {
-  noiseCanvas = null;
+  // Regenerate if dimensions or intensity changed
+  if (
+    noiseCanvas &&
+    noiseWidth === width &&
+    noiseHeight === height &&
+    Math.abs(lastIntensity - intensity) < 0.01
+  ) {
+    return noiseCanvas;
+  }
 
   noiseCanvas = document.createElement("canvas");
   noiseCanvas.width = width;
   noiseCanvas.height = height;
   noiseWidth = width;
   noiseHeight = height;
+  lastIntensity = intensity;
 
-  const ctx = noiseCanvas.getContext("2d");
+  const ctx = noiseCanvas.getContext("2d", { willReadFrequently: true });
   if (!ctx) return noiseCanvas;
 
   const imageData = ctx.createImageData(width, height);
@@ -322,9 +333,13 @@ function getNoiseCanvas(
   // Higher intensity = more noise particles
   const densityThreshold = 1 - intensity;
 
-  // ⚙️ ALPHA RANGE: scales with intensity
-  const minAlpha = Math.floor(3 + intensity * 5); // 3-8
-  const alphaRange = Math.floor(15 + intensity * 15); // 15-30
+  // ⚙️ ALPHA RANGE: significantly increased for visibility
+  // Scales with intensity for more pronounced effect
+  const minAlpha = Math.floor(8 + intensity * 15); // 8-23
+  const alphaRange = Math.floor(20 + intensity * 40); // 20-60
+
+  // Add variation in particle sizes for more realistic texture
+  const useCluster = Math.random() > 0.7; // 30% chance of clustered particles
 
   for (let i = 0; i < data.length; i += 4) {
     const r = Math.random();
@@ -337,22 +352,49 @@ function getNoiseCanvas(
       continue;
     }
 
-    const isBright = Math.random() > 0.5;
+    // Create variation: 60% bright specks, 40% dark specks for better contrast
+    const isBright = Math.random() > 0.4;
+
+    // Randomly make some particles slightly larger (2x2 clusters)
+    const isLarger = useCluster && Math.random() > 0.85;
+
+    const alpha = Math.floor(Math.random() * alphaRange) + minAlpha;
 
     if (isBright) {
+      // White/light speck - use slight warm tint for natural paper feel
       data[i] = 255;
-      data[i + 1] = 255;
-      data[i + 2] = 255;
-      data[i + 3] = Math.floor(Math.random() * alphaRange) + minAlpha;
+      data[i + 1] = 253;
+      data[i + 2] = 250;
+      data[i + 3] = alpha;
     } else {
-      data[i] = 0;
-      data[i + 1] = 0;
-      data[i + 2] = 0;
-      data[i + 3] = Math.floor(Math.random() * alphaRange) + minAlpha;
+      // Dark speck - use slight cool tint for depth
+      data[i] = 10;
+      data[i + 1] = 8;
+      data[i + 2] = 5;
+      data[i + 3] = alpha;
+    }
+
+    // Create occasional larger particles for realistic grain
+    if (isLarger && i + 4 < data.length) {
+      const nextAlpha = Math.floor(alpha * 0.6); // Softer edges
+      data[i + 4] = data[i];
+      data[i + 5] = data[i + 1];
+      data[i + 6] = data[i + 2];
+      data[i + 7] = nextAlpha;
     }
   }
 
   ctx.putImageData(imageData, 0, 0);
+
+  // Apply subtle blur for more organic, film-like grain
+  // This prevents harsh pixel noise and creates smoother texture
+  ctx.filter = "blur(0.3px)";
+  ctx.globalCompositeOperation = "source-over";
+  ctx.globalAlpha = 0.4;
+  ctx.drawImage(noiseCanvas, 0, 0);
+  ctx.filter = "none";
+  ctx.globalAlpha = 1;
+
   return noiseCanvas;
 }
 
@@ -360,15 +402,30 @@ function drawPaperTexture(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  _isDarkBackground: boolean,
-  intensity: number, // Add this parameter
+  isDarkBackground: boolean,
+  intensity: number,
 ): void {
   const noise = getNoiseCanvas(Math.ceil(width), Math.ceil(height), intensity);
 
   ctx.save();
-  ctx.globalCompositeOperation = "source-over";
-  ctx.globalAlpha = 1;
+
+  // Use multiply blend mode for dark backgrounds, screen for light backgrounds
+  // This ensures texture is visible on any background color
+  if (isDarkBackground) {
+    ctx.globalCompositeOperation = "screen";
+    ctx.globalAlpha = 0.4 + intensity * 0.3; // 0.4-0.7 based on intensity
+  } else {
+    ctx.globalCompositeOperation = "multiply";
+    ctx.globalAlpha = 0.5 + intensity * 0.2; // 0.5-0.7 based on intensity
+  }
+
   ctx.drawImage(noise, 0, 0, width, height);
+
+  // Add a second layer with different blend mode for depth
+  ctx.globalCompositeOperation = "overlay";
+  ctx.globalAlpha = 0.15 + intensity * 0.15; // 0.15-0.3
+  ctx.drawImage(noise, 0, 0, width, height);
+
   ctx.restore();
 }
 
@@ -1374,7 +1431,6 @@ function renderDropCapRich(
 }
 
 // ---- Export ----
-// src/engine/renderer.ts
 
 export function exportCanvas(
   config: RenderConfig,
@@ -1389,7 +1445,10 @@ export function exportCanvas(
   offscreen.width = shapeData.width * scale;
   offscreen.height = shapeData.height * scale;
 
-  const ctx = offscreen.getContext("2d", { alpha: false });
+  const ctx = offscreen.getContext("2d", {
+    alpha: false,
+    willReadFrequently: false,
+  });
   if (!ctx) return;
 
   ctx.imageSmoothingEnabled = true;
@@ -1398,15 +1457,17 @@ export function exportCanvas(
 
   drawBackground(ctx, config, shapeData.width, shapeData.height);
 
-  // Paper texture for exports too - pass the intensity parameter
+  // Paper texture for exports - ensure it's visible
   if (config.paperTexture) {
     const luminance = getLuminance(config.backgroundColor);
+    // For exports, slightly boost the intensity for better visibility
+    const exportIntensity = Math.min(config.noiseIntensity * 1.1, 1.0);
     drawPaperTexture(
       ctx,
       shapeData.width,
       shapeData.height,
       luminance < 0.5,
-      config.noiseIntensity, // ← Add this parameter
+      exportIntensity,
     );
   }
 
