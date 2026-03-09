@@ -333,7 +333,6 @@
   }
 }
 
-
 /* Ensure proper scrolling behavior */
 .editor-panel {
   scrollbar-width: thin;
@@ -403,4 +402,38 @@ canvas {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+.tiptap-editor .ProseMirror sub {
+  font-size: 0.75em;
+  vertical-align: sub;
+}
+
+.tiptap-editor .ProseMirror sup {
+  font-size: 0.75em;
+  vertical-align: super;
+}
+
+/* Small Caps */
+.tiptap-editor .ProseMirror span[style*="font-variant: small-caps"] {
+  font-variant: small-caps;
+}
+
+/* Text opacity */
+.tiptap-editor .ProseMirror span[style*="opacity"] {
+  transition: opacity 0.15s ease;
+}
+
+/* Highlight marks */
+.tiptap-editor .ProseMirror mark {
+  border-radius: 2px;
+  padding: 1px 2px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* Colored text */
+.tiptap-editor .ProseMirror span[style*="color"] {
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }

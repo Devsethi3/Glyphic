@@ -8,9 +8,14 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Typography from "@tiptap/extension-typography";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
+import Subscript from "@tiptap/extension-subscript";
+import Superscript from "@tiptap/extension-superscript";
+import Color from "@tiptap/extension-color";
+import Highlight from "@tiptap/extension-highlight";
 
 import { useEditorStore } from "@/store/editor-store";
 import { BubbleMenuBar } from "./bubble-menu-bar";
+import { CustomTextStyle } from "../extensions/custom-text-style";
 
 export function RichTextEditor() {
   const setContent = useEditorStore((s) => s.setContent);
@@ -32,6 +37,13 @@ export function RichTextEditor() {
         types: ["heading", "paragraph"],
       }),
       Underline,
+      Subscript,
+      Superscript,
+      CustomTextStyle,
+      Color,
+      Highlight.configure({
+        multicolor: true,
+      }),
     ],
     editorProps: {
       attributes: {
