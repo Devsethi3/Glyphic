@@ -160,8 +160,8 @@ export function renderCanvas(
     drawPlaceholder(
       ctx,
       config,
-      baseWidth,
-      baseHeight,
+      // baseWidth,
+      // baseHeight,
       contentWidth,
       contentHeight,
       paddingX,
@@ -240,8 +240,6 @@ function drawBackground(
 function drawPlaceholder(
   ctx: CanvasRenderingContext2D,
   config: RenderConfig,
-  canvasWidth: number,
-  canvasHeight: number,
   contentWidth: number,
   contentHeight: number,
   paddingX: number,
@@ -1483,8 +1481,8 @@ export function exportCanvas(
     drawPlaceholder(
       ctx,
       config,
-      shapeData.width,
-      shapeData.height,
+      // shapeData.width,
+      // shapeData.height,
       contentWidth,
       contentHeight,
       paddingX,
