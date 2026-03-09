@@ -37,7 +37,7 @@ export function LandingPage() {
       <div className="min-h-screen max-w-5xl mx-auto flex flex-col">
         <header className="flex items-center justify-between px-6 h-14">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Glyphic" className="size-5" />
+            <img src="/logo.svg" alt="Glyphic" className="size-5 rotate-45" />
             <span className="text-sm font-semibold tracking-tight">
               Glyphic
             </span>

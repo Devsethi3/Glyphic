@@ -35,10 +35,22 @@ interface InlineSpan {
   smallCaps: boolean;
 }
 
+type BlockType =
+  | "paragraph"
+  | "heading1"
+  | "heading2"
+  | "heading3"
+  | "blockquote"
+  | "bullet-item"
+  | "ordered-item"
+  | "horizontal-rule";
+
 interface RichTextBlock {
   spans: InlineSpan[];
-  type: "paragraph" | "heading1" | "heading2" | "heading3" | "blockquote";
+  type: BlockType;
   align: "left" | "center" | "right";
+  listIndex?: number;
+  listDepth?: number;
 }
 
 interface MeasuredLine {
@@ -59,6 +71,7 @@ interface MeasuredRichBlock {
   totalHeight: number;
   isQuote: boolean;
   quoteIndent: number;
+  bulletIndent: number;
 }
 
 interface WordSpan {
@@ -75,6 +88,19 @@ interface WordSpan {
   smallCaps: boolean;
   trailingSpace?: boolean;
 }
+
+const DEFAULT_SPAN: Omit<InlineSpan, "text"> = {
+  bold: false,
+  italic: false,
+  underline: false,
+  strikethrough: false,
+  color: null,
+  opacity: 1,
+  highlight: null,
+  superscript: false,
+  subscript: false,
+  smallCaps: false,
+};
 
 // ---- Main Render ----
 
@@ -118,7 +144,6 @@ export function renderCanvas(
   }
 
   const blocks = parseHtmlToRichBlocks(config.htmlContent);
-
   renderRichTextBlocksCentered(
     ctx,
     blocks,
@@ -200,29 +225,42 @@ function drawPlaceholder(
   ctx.restore();
 }
 
-// ---- HTML Parsing ----
+// ---- Style Extraction ----
 
-const DEFAULT_SPAN: Omit<InlineSpan, "text"> = {
-  bold: false,
-  italic: false,
-  underline: false,
-  strikethrough: false,
-  color: null,
-  opacity: 1,
-  highlight: null,
-  superscript: false,
-  subscript: false,
-  smallCaps: false,
-};
+function extractStyleProperty(style: string, property: string): string | null {
+  if (!style) return null;
+  const declarations = style.split(";");
+  for (const decl of declarations) {
+    const trimmed = decl.trim();
+    if (!trimmed) continue;
+    const colonIndex = trimmed.indexOf(":");
+    if (colonIndex === -1) continue;
+    const prop = trimmed.substring(0, colonIndex).trim().toLowerCase();
+    const value = trimmed.substring(colonIndex + 1).trim();
+    if (prop === property.toLowerCase() && value) {
+      return value;
+    }
+  }
+  return null;
+}
+
+// ---- HTML Parsing ----
 
 function parseHtmlToRichBlocks(html: string): RichTextBlock[] {
   if (!html) return [];
-
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
   const blocks: RichTextBlock[] = [];
+  processChildNodes(doc.body, blocks, 0);
+  return blocks;
+}
 
-  const children = doc.body.childNodes;
+function processChildNodes(
+  parent: Node,
+  blocks: RichTextBlock[],
+  listDepth: number,
+): void {
+  const children = parent.childNodes;
   for (let i = 0; i < children.length; i++) {
     const node = children[i];
 
@@ -240,6 +278,21 @@ function parseHtmlToRichBlocks(html: string): RichTextBlock[] {
 
     if (node.nodeType !== Node.ELEMENT_NODE) continue;
     const el = node as HTMLElement;
+    const tag = el.tagName.toLowerCase();
+
+    if (tag === "ul") {
+      processListItems(el, "bullet-item", blocks, listDepth);
+      continue;
+    }
+    if (tag === "ol") {
+      processListItems(el, "ordered-item", blocks, listDepth);
+      continue;
+    }
+    if (tag === "hr") {
+      blocks.push({ spans: [], type: "horizontal-rule", align: "left" });
+      continue;
+    }
+
     const text = el.textContent?.trim() || "";
     if (!text) continue;
 
@@ -247,10 +300,9 @@ function parseHtmlToRichBlocks(html: string): RichTextBlock[] {
     const alignMatch = style.match(/text-align:\s*(left|center|right)/);
     const align = (alignMatch?.[1] || "left") as "left" | "center" | "right";
 
-    let type: RichTextBlock["type"] = "paragraph";
-    let sourceEl: HTMLElement = el;
+    let type: BlockType = "paragraph";
 
-    switch (el.tagName.toLowerCase()) {
+    switch (tag) {
       case "h1":
         type = "heading1";
         break;
@@ -262,20 +314,104 @@ function parseHtmlToRichBlocks(html: string): RichTextBlock[] {
         break;
       case "blockquote":
         type = "blockquote";
-        const inner = el.querySelector("p");
-        if (inner) sourceEl = inner;
+        const bqChildren = el.children;
+        if (bqChildren.length > 0) {
+          for (let j = 0; j < bqChildren.length; j++) {
+            const innerEl = bqChildren[j] as HTMLElement;
+            const innerText = innerEl.textContent?.trim() || "";
+            if (!innerText) continue;
+            const innerSpans = extractInlineSpans(innerEl);
+            if (innerSpans.length > 0) {
+              blocks.push({ spans: innerSpans, type: "blockquote", align });
+            }
+          }
+          continue;
+        }
         break;
-      default:
-        type = "paragraph";
     }
 
-    const spans = extractInlineSpans(sourceEl);
+    const spans = extractInlineSpans(el);
     if (spans.length > 0) {
       blocks.push({ spans, type, align });
     }
   }
+}
 
-  return blocks;
+function processListItems(
+  listEl: HTMLElement,
+  type: "bullet-item" | "ordered-item",
+  blocks: RichTextBlock[],
+  depth: number,
+): void {
+  const items = listEl.children;
+  let orderIndex = 1;
+
+  for (let i = 0; i < items.length; i++) {
+    const li = items[i] as HTMLElement;
+    if (li.tagName.toLowerCase() !== "li") continue;
+
+    const nestedUl = li.querySelector(":scope > ul");
+    const nestedOl = li.querySelector(":scope > ol");
+
+    let hasDirectText = false;
+    for (let j = 0; j < li.childNodes.length; j++) {
+      const child = li.childNodes[j];
+      if (child.nodeType === Node.TEXT_NODE && child.textContent?.trim()) {
+        hasDirectText = true;
+        break;
+      }
+      if (
+        child.nodeType === Node.ELEMENT_NODE &&
+        !["ul", "ol"].includes((child as HTMLElement).tagName.toLowerCase())
+      ) {
+        hasDirectText = true;
+        break;
+      }
+    }
+
+    if (hasDirectText) {
+      const contentEl =
+        li.querySelector(":scope > p") ||
+        (() => {
+          const temp = document.createElement("span");
+          for (let j = 0; j < li.childNodes.length; j++) {
+            const child = li.childNodes[j];
+            if (
+              child.nodeType === Node.TEXT_NODE ||
+              (child.nodeType === Node.ELEMENT_NODE &&
+                !["ul", "ol"].includes(
+                  (child as HTMLElement).tagName.toLowerCase(),
+                ))
+            ) {
+              temp.appendChild(child.cloneNode(true));
+            }
+          }
+          return temp;
+        })();
+
+      const spans = extractInlineSpans(contentEl as HTMLElement);
+      if (spans.length > 0) {
+        const style = li.getAttribute("style") || "";
+        const alignMatch = style.match(/text-align:\s*(left|center|right)/);
+        const align = (alignMatch?.[1] || "left") as
+          | "left"
+          | "center"
+          | "right";
+        blocks.push({
+          spans,
+          type,
+          align,
+          listIndex: type === "ordered-item" ? orderIndex : undefined,
+          listDepth: depth,
+        });
+      }
+    }
+
+    orderIndex++;
+
+    if (nestedUl) processListItems(nestedUl, "bullet-item", blocks, depth + 1);
+    if (nestedOl) processListItems(nestedOl, "ordered-item", blocks, depth + 1);
+  }
 }
 
 function extractInlineSpans(el: HTMLElement): InlineSpan[] {
@@ -301,6 +437,8 @@ function walkInlineNodes(
   const el = node as HTMLElement;
   const tag = el.tagName.toLowerCase();
 
+  if (["ul", "ol", "li", "hr"].includes(tag)) return;
+
   const current: InlineSpan = { ...inherited, text: "" };
 
   // Tag-based formatting
@@ -316,61 +454,63 @@ function walkInlineNodes(
   if (tag === "mark") {
     const bgColor =
       el.getAttribute("data-color") ||
+      extractStyleProperty(
+        el.getAttribute("style") || "",
+        "background-color",
+      ) ||
       el.style.backgroundColor ||
-      el.getAttribute("style")?.match(/background-color:\s*([^;]+)/)?.[1] ||
       null;
     if (bgColor) current.highlight = bgColor.trim();
+    // IMPORTANT: Do NOT extract color from <mark> element
+    // Let the color stay as inherited or be set by a child <span>
   }
 
-  // Style-based formatting
+  // Style-based formatting from the element's style attribute
   const style = el.getAttribute("style") || "";
 
+  const fontWeight = extractStyleProperty(style, "font-weight");
   if (
-    style.includes("font-weight: bold") ||
-    style.includes("font-weight:bold") ||
-    style.includes("font-weight: 700") ||
-    style.includes("font-weight:700")
+    fontWeight === "bold" ||
+    fontWeight === "700" ||
+    fontWeight === "800" ||
+    fontWeight === "900"
   ) {
     current.bold = true;
   }
-  if (
-    style.includes("font-style: italic") ||
-    style.includes("font-style:italic")
-  ) {
-    current.italic = true;
-  }
-  if (style.includes("text-decoration") && style.includes("underline")) {
-    current.underline = true;
-  }
-  if (style.includes("text-decoration") && style.includes("line-through")) {
-    current.strikethrough = true;
+
+  const fontStyleVal = extractStyleProperty(style, "font-style");
+  if (fontStyleVal === "italic") current.italic = true;
+
+  const textDecoration = extractStyleProperty(style, "text-decoration");
+  if (textDecoration) {
+    if (textDecoration.includes("underline")) current.underline = true;
+    if (textDecoration.includes("line-through")) current.strikethrough = true;
   }
 
-  // Color from style (TipTap uses style="color: #xxx")
-  const colorMatch = style.match(/(?:^|;)\s*color\s*:\s*([^;]+)/);
-  if (colorMatch) {
-    current.color = colorMatch[1].trim();
+  // Extract text color — but NOT from <mark> elements
+  // <mark> should only contribute highlight, never override text color
+  if (tag !== "mark") {
+    const colorValue = extractStyleProperty(style, "color");
+    if (colorValue) {
+      current.color = colorValue;
+    } else if (el.style && el.style.color && el.style.color !== "") {
+      current.color = el.style.color;
+    }
   }
 
-  // Opacity from style
-  const opacityMatch = style.match(/(?:^|;)\s*opacity\s*:\s*([^;]+)/);
-  if (opacityMatch) {
-    const val = parseFloat(opacityMatch[1].trim());
+  const opacityValue = extractStyleProperty(style, "opacity");
+  if (opacityValue) {
+    const val = parseFloat(opacityValue);
     if (!isNaN(val)) current.opacity = val;
   }
 
-  // Font-variant for small caps
-  if (
-    style.includes("font-variant: small-caps") ||
-    style.includes("font-variant:small-caps")
-  ) {
-    current.smallCaps = true;
-  }
+  const fontVariant = extractStyleProperty(style, "font-variant");
+  if (fontVariant === "small-caps") current.smallCaps = true;
 
-  // Background color from span style (for highlights applied via style)
-  const bgMatch = style.match(/background-color\s*:\s*([^;]+)/);
-  if (bgMatch && tag !== "mark") {
-    current.highlight = bgMatch[1].trim();
+  // Background color from non-mark elements (inline highlight)
+  if (tag !== "mark") {
+    const bgColor = extractStyleProperty(style, "background-color");
+    if (bgColor) current.highlight = bgColor.trim();
   }
 
   for (let i = 0; i < el.childNodes.length; i++) {
@@ -389,10 +529,8 @@ function buildFont(
 ): string {
   let weight = baseFontWeight;
   let style = baseFontStyle;
-
   if (span.bold) weight = Math.max(weight, 700);
   if (span.italic) style = "italic";
-
   return `${style} ${weight} ${fontSize}px "${fontFamily}", serif`;
 }
 
@@ -400,15 +538,12 @@ function buildFont(
 
 function flattenSpansToWords(spans: InlineSpan[]): WordSpan[] {
   const words: WordSpan[] = [];
-
   for (const span of spans) {
     const parts = span.text.split(/( +)/);
     for (const part of parts) {
       if (part === "") continue;
       if (/^ +$/.test(part)) {
-        if (words.length > 0) {
-          words[words.length - 1].trailingSpace = true;
-        }
+        if (words.length > 0) words[words.length - 1].trailingSpace = true;
       } else {
         words.push({
           word: part,
@@ -426,91 +561,7 @@ function flattenSpansToWords(spans: InlineSpan[]): WordSpan[] {
       }
     }
   }
-
   return words;
-}
-
-function wrapRichText(
-  ctx: CanvasRenderingContext2D,
-  spans: InlineSpan[],
-  maxWidth: number,
-  fontSize: number,
-  fontFamily: string,
-  baseFontWeight: number,
-  baseFontStyle: string,
-): MeasuredLine[] {
-  const words = flattenSpansToWords(spans);
-  if (words.length === 0) return [];
-
-  const lines: MeasuredLine[] = [];
-  let currentLineWords: WordSpan[] = [];
-  let currentLineWidth = 0;
-
-  ctx.font = buildFont(fontSize, fontFamily, baseFontWeight, baseFontStyle, {
-    ...DEFAULT_SPAN,
-    text: "",
-  });
-  const spaceWidth = ctx.measureText(" ").width;
-
-  for (const wordSpan of words) {
-    const spanFontSize =
-      wordSpan.superscript || wordSpan.subscript ? fontSize * 0.7 : fontSize;
-    const displayText = wordSpan.smallCaps
-      ? wordSpan.word.toUpperCase()
-      : wordSpan.word;
-
-    ctx.font = buildFont(
-      spanFontSize,
-      fontFamily,
-      baseFontWeight,
-      baseFontStyle,
-      wordSpan as unknown as InlineSpan,
-    );
-    const wordWidth = ctx.measureText(displayText).width;
-
-    const widthWithWord =
-      currentLineWidth +
-      (currentLineWords.length > 0 ? spaceWidth : 0) +
-      wordWidth;
-
-    if (widthWithWord > maxWidth && currentLineWords.length > 0) {
-      lines.push(
-        buildMeasuredLine(
-          ctx,
-          currentLineWords,
-          fontSize,
-          fontFamily,
-          baseFontWeight,
-          baseFontStyle,
-          spaceWidth,
-        ),
-      );
-      currentLineWords = [wordSpan];
-      currentLineWidth = wordWidth;
-    } else {
-      if (currentLineWords.length > 0) {
-        currentLineWidth += spaceWidth;
-      }
-      currentLineWords.push(wordSpan);
-      currentLineWidth += wordWidth;
-    }
-  }
-
-  if (currentLineWords.length > 0) {
-    lines.push(
-      buildMeasuredLine(
-        ctx,
-        currentLineWords,
-        fontSize,
-        fontFamily,
-        baseFontWeight,
-        baseFontStyle,
-        spaceWidth,
-      ),
-    );
-  }
-
-  return lines;
 }
 
 function wordSpanToInlineSpan(w: WordSpan, text: string): InlineSpan {
@@ -542,6 +593,85 @@ function spansMatch(a: InlineSpan | WordSpan, b: WordSpan): boolean {
     a.subscript === b.subscript &&
     a.smallCaps === b.smallCaps
   );
+}
+
+function wrapRichText(
+  ctx: CanvasRenderingContext2D,
+  spans: InlineSpan[],
+  maxWidth: number,
+  fontSize: number,
+  fontFamily: string,
+  baseFontWeight: number,
+  baseFontStyle: string,
+): MeasuredLine[] {
+  const words = flattenSpansToWords(spans);
+  if (words.length === 0) return [];
+
+  const lines: MeasuredLine[] = [];
+  let currentLineWords: WordSpan[] = [];
+  let currentLineWidth = 0;
+
+  ctx.font = buildFont(fontSize, fontFamily, baseFontWeight, baseFontStyle, {
+    ...DEFAULT_SPAN,
+    text: "",
+  });
+  const spaceWidth = ctx.measureText(" ").width;
+
+  for (const wordSpan of words) {
+    const spanFontSize =
+      wordSpan.superscript || wordSpan.subscript ? fontSize * 0.7 : fontSize;
+    const displayText = wordSpan.smallCaps
+      ? wordSpan.word.toUpperCase()
+      : wordSpan.word;
+    ctx.font = buildFont(
+      spanFontSize,
+      fontFamily,
+      baseFontWeight,
+      baseFontStyle,
+      wordSpanToInlineSpan(wordSpan, ""),
+    );
+    const wordWidth = ctx.measureText(displayText).width;
+    const widthWithWord =
+      currentLineWidth +
+      (currentLineWords.length > 0 ? spaceWidth : 0) +
+      wordWidth;
+
+    if (widthWithWord > maxWidth && currentLineWords.length > 0) {
+      lines.push(
+        buildMeasuredLine(
+          ctx,
+          currentLineWords,
+          fontSize,
+          fontFamily,
+          baseFontWeight,
+          baseFontStyle,
+          spaceWidth,
+        ),
+      );
+      currentLineWords = [wordSpan];
+      currentLineWidth = wordWidth;
+    } else {
+      if (currentLineWords.length > 0) currentLineWidth += spaceWidth;
+      currentLineWords.push(wordSpan);
+      currentLineWidth += wordWidth;
+    }
+  }
+
+  if (currentLineWords.length > 0) {
+    lines.push(
+      buildMeasuredLine(
+        ctx,
+        currentLineWords,
+        fontSize,
+        fontFamily,
+        baseFontWeight,
+        baseFontStyle,
+        spaceWidth,
+      ),
+    );
+  }
+
+  return lines;
 }
 
 function buildMeasuredLine(
@@ -594,17 +724,7 @@ function calculateBaseFontSize(_shape: string, contentWidth: number): number {
   );
 }
 
-function getBlockStyles(
-  type: RichTextBlock["type"],
-  baseFontSize: number,
-): {
-  fontSize: number;
-  fontWeight: number;
-  fontStyle: string;
-  opacity: number;
-  marginTop: number;
-  marginBottom: number;
-} {
+function getBlockStyles(type: BlockType, baseFontSize: number) {
   switch (type) {
     case "heading1":
       return {
@@ -642,6 +762,25 @@ function getBlockStyles(
         marginTop: baseFontSize * 0.5,
         marginBottom: baseFontSize * 0.5,
       };
+    case "bullet-item":
+    case "ordered-item":
+      return {
+        fontSize: baseFontSize,
+        fontWeight: 400,
+        fontStyle: "normal",
+        opacity: 1,
+        marginTop: baseFontSize * 0.08,
+        marginBottom: baseFontSize * 0.08,
+      };
+    case "horizontal-rule":
+      return {
+        fontSize: baseFontSize,
+        fontWeight: 400,
+        fontStyle: "normal",
+        opacity: 0.3,
+        marginTop: baseFontSize * 0.6,
+        marginBottom: baseFontSize * 0.6,
+      };
     default:
       return {
         fontSize: baseFontSize,
@@ -668,40 +807,61 @@ function measureRichTextBlocks(
   for (let i = 0; i < blocks.length; i++) {
     const block = blocks[i];
     const styles = getBlockStyles(block.type, baseFontSize);
-    const { fontSize, fontWeight, fontStyle, opacity, marginBottom } = styles;
     const marginTop = i === 0 ? 0 : styles.marginTop;
 
     const isQuote = block.type === "blockquote";
     const quoteIndent = isQuote ? 24 : 0;
-    const effectiveWidth = contentWidth - quoteIndent;
+    const isList =
+      block.type === "bullet-item" || block.type === "ordered-item";
+    const depth = block.listDepth || 0;
+    const bulletIndent = isList ? 28 + depth * 20 : 0;
+    const effectiveWidth = contentWidth - quoteIndent - bulletIndent;
+
+    if (block.type === "horizontal-rule") {
+      measuredBlocks.push({
+        block,
+        lines: [],
+        lineHeight: 0,
+        fontSize: styles.fontSize,
+        baseFontWeight: styles.fontWeight,
+        baseFontStyle: styles.fontStyle,
+        baseOpacity: styles.opacity,
+        marginTop,
+        marginBottom: styles.marginBottom,
+        totalHeight: marginTop + 2 + styles.marginBottom,
+        isQuote: false,
+        quoteIndent: 0,
+        bulletIndent: 0,
+      });
+      continue;
+    }
 
     const lines = wrapRichText(
       ctx,
       block.spans,
       effectiveWidth,
-      fontSize,
+      styles.fontSize,
       config.fontFamily,
-      fontWeight,
-      fontStyle,
+      styles.fontWeight,
+      styles.fontStyle,
     );
-
-    const lineHeight = fontSize * config.lineHeight;
+    const lineHeight = styles.fontSize * config.lineHeight;
     const textHeight = lines.length * lineHeight;
-    const totalHeight = marginTop + textHeight + marginBottom;
 
     measuredBlocks.push({
       block,
       lines,
       lineHeight,
-      fontSize,
-      baseFontWeight: fontWeight,
-      baseFontStyle: fontStyle,
-      baseOpacity: opacity,
+      fontSize: styles.fontSize,
+      baseFontWeight: styles.fontWeight,
+      baseFontStyle: styles.fontStyle,
+      baseOpacity: styles.opacity,
       marginTop,
-      marginBottom,
-      totalHeight,
+      marginBottom: styles.marginBottom,
+      totalHeight: marginTop + textHeight + styles.marginBottom,
       isQuote,
       quoteIndent,
+      bulletIndent,
     });
   }
 
@@ -727,11 +887,8 @@ function renderRichTextBlocksCentered(
   );
 
   let totalTextHeight = 0;
-  for (const mb of measuredBlocks) {
-    totalTextHeight += mb.totalHeight;
-  }
+  for (const mb of measuredBlocks) totalTextHeight += mb.totalHeight;
 
-  // Drop cap adjustment
   if (
     config.dropCap &&
     measuredBlocks.length > 0 &&
@@ -757,14 +914,30 @@ function renderRichTextBlocksCentered(
       marginBottom,
       isQuote,
       quoteIndent,
+      bulletIndent,
     } = mb;
 
     if (currentY > paddingY + contentHeight) break;
     currentY += marginTop;
 
+    // Horizontal rule
+    if (block.type === "horizontal-rule") {
+      ctx.save();
+      ctx.strokeStyle = config.textColor;
+      ctx.globalAlpha = baseOpacity;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(paddingX, currentY);
+      ctx.lineTo(paddingX + contentWidth, currentY);
+      ctx.stroke();
+      ctx.restore();
+      currentY += 2 + marginBottom;
+      continue;
+    }
+
     ctx.save();
 
-    // Handle drop cap
+    // Drop cap
     if (
       config.dropCap &&
       isFirstParagraph &&
@@ -793,23 +966,52 @@ function renderRichTextBlocksCentered(
       }
     }
 
-    // Render each line
+    const totalIndent = quoteIndent + bulletIndent;
+
+    // Draw bullet/number
+    if (
+      (block.type === "bullet-item" || block.type === "ordered-item") &&
+      lines.length > 0
+    ) {
+      ctx.save();
+      ctx.fillStyle = config.textColor;
+      ctx.globalAlpha = baseOpacity * 0.8;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      const depth = block.listDepth || 0;
+      const indentX = paddingX + depth * 20;
+
+      if (block.type === "bullet-item") {
+        const bulletChars = ["•", "◦", "▪"];
+        ctx.font = `400 ${fontSize}px "${config.fontFamily}", serif`;
+        ctx.fillText(
+          bulletChars[Math.min(depth, bulletChars.length - 1)],
+          indentX + 8,
+          currentY,
+        );
+      } else {
+        ctx.font = `400 ${fontSize}px "${config.fontFamily}", serif`;
+        ctx.fillText(`${block.listIndex || 1}.`, indentX + 4, currentY);
+      }
+      ctx.restore();
+    }
+
     const blockStartY = currentY;
+
     for (const line of lines) {
       if (currentY > paddingY + contentHeight) break;
 
-      const effectiveWidth = contentWidth - quoteIndent;
+      const effectiveWidth = contentWidth - totalIndent;
       let lineX: number;
-
       switch (block.align) {
         case "center":
-          lineX = paddingX + quoteIndent + (effectiveWidth - line.width) / 2;
+          lineX = paddingX + totalIndent + (effectiveWidth - line.width) / 2;
           break;
         case "right":
-          lineX = paddingX + quoteIndent + effectiveWidth - line.width;
+          lineX = paddingX + totalIndent + effectiveWidth - line.width;
           break;
         default:
-          lineX = paddingX + quoteIndent;
+          lineX = paddingX + totalIndent;
       }
 
       let spanX = lineX;
@@ -819,104 +1021,103 @@ function renderRichTextBlocksCentered(
         const displayText = span.smallCaps
           ? span.text.toUpperCase()
           : span.text;
-        const smallCapsFontSize = span.smallCaps
-          ? fontSize * 0.85
-          : spanFontSize;
-        const finalFontSize = span.smallCaps ? smallCapsFontSize : spanFontSize;
+        const finalFontSize = span.smallCaps ? fontSize * 0.85 : spanFontSize;
 
-        const font = buildFont(
+        ctx.font = buildFont(
           finalFontSize,
           config.fontFamily,
           baseFontWeight,
           baseFontStyle,
           span,
         );
-        ctx.font = font;
-
         const spanWidth = ctx.measureText(displayText).width;
 
-        // Calculate vertical offset for super/subscript
         let yOffset = 0;
         if (span.superscript) yOffset = -fontSize * 0.3;
         if (span.subscript) yOffset = fontSize * 0.25;
-
         const spanY = currentY + yOffset;
+        const effectiveOpacity = baseOpacity * span.opacity;
+
+        // The text color the user explicitly set (or null)
+        const explicitColor = span.color;
+        // The final color to render text with
+        const textColor = explicitColor || config.textColor;
 
         // Draw highlight background
         if (span.highlight) {
           ctx.save();
           ctx.fillStyle = span.highlight;
-          ctx.globalAlpha = baseOpacity * span.opacity * 0.6;
-          const hlPadding = 2;
-          ctx.fillRect(
-            spanX - hlPadding,
-            spanY - 1,
-            spanWidth + hlPadding * 2,
-            finalFontSize * 1.2 + 2,
-          );
+          // Use full opacity for highlight so it's clearly visible
+          ctx.globalAlpha = effectiveOpacity * 0.85;
+          const hlPad = 2;
+          const hlH = finalFontSize * 1.25;
+          const hlY = spanY - finalFontSize * 0.05;
+          ctx.beginPath();
+          ctx.roundRect(spanX - hlPad, hlY, spanWidth + hlPad * 2, hlH, 3);
+          ctx.fill();
           ctx.restore();
         }
 
-        // Draw text
+        // Draw text — always use the explicit color or theme color
+        // The highlight is drawn BEHIND the text so text is always visible
         ctx.save();
-        ctx.fillStyle = span.color || config.textColor;
-        ctx.globalAlpha = baseOpacity * span.opacity;
+        ctx.fillStyle = textColor;
+        ctx.globalAlpha = effectiveOpacity;
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
         ctx.fillText(displayText, spanX, spanY);
         ctx.restore();
 
-        // Draw underline
+        // Underline
         if (span.underline) {
           ctx.save();
-          ctx.strokeStyle = span.color || config.textColor;
-          ctx.globalAlpha = baseOpacity * span.opacity;
+          ctx.strokeStyle = textColor;
+          ctx.globalAlpha = effectiveOpacity;
           ctx.lineWidth = Math.max(1, finalFontSize * 0.055);
-          const underlineY = spanY + finalFontSize * 1.1;
           ctx.beginPath();
-          ctx.moveTo(spanX, underlineY);
-          ctx.lineTo(spanX + spanWidth, underlineY);
+          ctx.moveTo(spanX, spanY + finalFontSize * 1.1);
+          ctx.lineTo(spanX + spanWidth, spanY + finalFontSize * 1.1);
           ctx.stroke();
           ctx.restore();
         }
 
-        // Draw strikethrough
+        // Strikethrough
         if (span.strikethrough) {
           ctx.save();
-          ctx.strokeStyle = span.color || config.textColor;
-          ctx.globalAlpha = baseOpacity * span.opacity;
+          ctx.strokeStyle = textColor;
+          ctx.globalAlpha = effectiveOpacity;
           ctx.lineWidth = Math.max(1, finalFontSize * 0.055);
-          const strikeY = spanY + finalFontSize * 0.55;
           ctx.beginPath();
-          ctx.moveTo(spanX, strikeY);
-          ctx.lineTo(spanX + spanWidth, strikeY);
+          ctx.moveTo(spanX, spanY + finalFontSize * 0.55);
+          ctx.lineTo(spanX + spanWidth, spanY + finalFontSize * 0.55);
           ctx.stroke();
           ctx.restore();
         }
 
         spanX += spanWidth;
       }
-
       currentY += lineHeight;
     }
 
     // Blockquote bar
     if (isQuote && lines.length > 0) {
-      const barX = paddingX + 6;
-      const barHeight = lines.length * lineHeight;
+      ctx.save();
       ctx.fillStyle = config.textColor;
       ctx.globalAlpha = 0.3;
       ctx.beginPath();
-      ctx.roundRect(barX, blockStartY, 3, barHeight, 1.5);
+      ctx.roundRect(
+        paddingX + 6,
+        blockStartY,
+        3,
+        lines.length * lineHeight,
+        1.5,
+      );
       ctx.fill();
+      ctx.restore();
     }
 
     ctx.restore();
-
-    if (block.type === "paragraph") {
-      isFirstParagraph = false;
-    }
-
+    if (block.type === "paragraph") isFirstParagraph = false;
     currentY += marginBottom;
   }
 }
@@ -941,10 +1142,8 @@ function renderDropCapRich(
 
   ctx.save();
   ctx.globalAlpha = baseOpacity;
-
   ctx.font = `700 ${dropCapSize}px "${config.fontFamily}", serif`;
-  const dropCapMetrics = ctx.measureText(firstChar);
-  const dropCapWidth = dropCapMetrics.width + fontSize * 0.4;
+  const dropCapWidth = ctx.measureText(firstChar).width + fontSize * 0.4;
   const dropCapHeight = dropCapSize * 0.85;
   const dropCapLines = Math.ceil(dropCapHeight / lineHeight);
 
@@ -958,14 +1157,8 @@ function renderDropCapRich(
     config.fontFamily,
     baseFontWeight,
     baseFontStyle,
-    {
-      ...DEFAULT_SPAN,
-      text: "",
-    },
+    { ...DEFAULT_SPAN, text: "" },
   );
-
-  const indentedWidth = contentWidth - dropCapWidth;
-  const normalWidth = contentWidth;
 
   let currentY = startY;
   let textRemaining = restText;
@@ -973,9 +1166,8 @@ function renderDropCapRich(
 
   while (textRemaining.length > 0) {
     const isIndented = lineCount < dropCapLines;
-    const width = isIndented ? indentedWidth : normalWidth;
+    const width = isIndented ? contentWidth - dropCapWidth : contentWidth;
     const x = isIndented ? paddingX + dropCapWidth : paddingX;
-
     const words = textRemaining.split(" ");
     let line = "";
     let wordIndex = 0;
@@ -1018,7 +1210,6 @@ export function exportCanvas(
 ): void {
   const scaleMap = { standard: 2, high: 3, ultra: 4 };
   const scale = scaleMap[quality];
-
   const offscreen = document.createElement("canvas");
   const shapeData = shapes[config.shape];
 
