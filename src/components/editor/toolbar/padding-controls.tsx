@@ -1,6 +1,6 @@
+// padding-controls.tsx
 import { useEditorStore } from "@/store/editor-store";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   LockedIcon,
@@ -18,6 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import Scrubber from "@/components/smoothui/scrubber";
 
 export function PaddingControls() {
   const paddingLocked = useEditorStore((s) => s.paddingLocked);
@@ -33,8 +34,8 @@ export function PaddingControls() {
         <Tooltip>
           <TooltipTrigger asChild>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 px-2.5">
-                <HugeiconsIcon icon={BorderAllIcon} size={16} />
+              <Button variant="outline" size="sm" className="h-8">
+                <img src="/box.svg" alt="padding" />
               </Button>
             </PopoverTrigger>
           </TooltipTrigger>
@@ -45,12 +46,12 @@ export function PaddingControls() {
       </TooltipProvider>
 
       <PopoverContent
-        className="w-64 sm:w-72 p-4"
+        className="w-72 p-3"
         align="start"
         side="bottom"
         sideOffset={4}
       >
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
             <label className="text-xs font-medium">Padding</label>
             <Button
@@ -66,56 +67,63 @@ export function PaddingControls() {
             </Button>
           </div>
 
-          <div className="space-y-3">
-            <div className="space-y-2">
+          {paddingLocked ? (
+            <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">
-                  Horizontal
-                </span>
+                <label className="text-xs font-medium">All side</label>
                 <span className="text-xs tabular-nums text-muted-foreground">
-                  {paddingHorizontal}%
+                  {paddingHorizontal}
                 </span>
               </div>
-              <Slider
-                value={[paddingHorizontal]}
+              <Scrubber
+                label=""
+                value={paddingHorizontal}
                 onValueChange={(value) => {
-                  const newValue = Array.isArray(value) ? value[0] : value;
-                  setPaddingHorizontal(newValue);
-                  if (paddingLocked) {
-                    setPaddingVertical(newValue);
-                  }
+                  setPaddingHorizontal(value);
                 }}
                 min={0}
                 max={30}
                 step={1}
-                className="w-full"
+                decimals={0}
+                ticks={5}
               />
             </div>
-
-            <div className="space-y-2">
+          ) : (
+            <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Vertical</span>
+                <label className="text-xs font-medium">Horizontal</label>
                 <span className="text-xs tabular-nums text-muted-foreground">
-                  {paddingVertical}%
+                  {paddingHorizontal}
                 </span>
               </div>
-              <Slider
-                value={[paddingVertical]}
-                onValueChange={(value) => {
-                  const newValue = Array.isArray(value) ? value[0] : value;
-                  setPaddingVertical(newValue);
-                  if (paddingLocked) {
-                    setPaddingHorizontal(newValue);
-                  }
-                }}
+              <Scrubber
+                label=""
+                value={paddingHorizontal}
+                onValueChange={setPaddingHorizontal}
                 min={0}
                 max={30}
                 step={1}
-                className="w-full"
-                disabled={paddingLocked}
+                decimals={0}
+                ticks={5}
+              />
+              <div className="flex mt-4 items-center justify-between">
+                <label className="text-xs font-medium">Vertical</label>
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {paddingVertical}
+                </span>
+              </div>
+              <Scrubber
+                label=""
+                value={paddingVertical}
+                onValueChange={setPaddingVertical}
+                min={0}
+                max={30}
+                step={1}
+                decimals={0}
+                ticks={5}
               />
             </div>
-          </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>

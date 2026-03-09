@@ -12,7 +12,7 @@ export function EditorHeader() {
         to="/"
         className="flex items-center gap-2 hover:opacity-80 transition-opacity"
       >
-        <img src="/logo.svg" alt="Glyphic" className="size-5 rotate-45" />
+        <img src="/logo.svg" alt="Glyphic" className="size-5" />
         <span className="text-sm font-semibold tracking-tight">Glyphic</span>
       </Link>
 

@@ -1,7 +1,7 @@
 import { useEditorStore } from "@/store/editor-store";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { TextFirstlineLeftIcon } from "@hugeicons/core-free-icons";
+import { TextFirstlineRightIcon } from "@hugeicons/core-free-icons";
 import {
   Tooltip,
   TooltipContent,
@@ -24,7 +24,7 @@ export function DropCapToggle() {
             className={cn("h-8 px-2.5", dropCap && "bg-secondary")}
             onClick={toggleDropCap}
           >
-            <HugeiconsIcon icon={TextFirstlineLeftIcon} size={16} />
+            <HugeiconsIcon icon={TextFirstlineRightIcon} size={16} />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="text-xs">
