@@ -33,6 +33,12 @@ const clamp = (val: number, min: number, max: number) =>
 const roundToStep = (val: number, step: number, min: number) =>
   Math.round((val - min) / step) * step + min;
 
+// Helper function to check if device supports hover
+const getIsHoverDevice = () => {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+};
+
 const Scrubber = ({
   label = "Value",
   value: controlledValue,
@@ -50,7 +56,8 @@ const Scrubber = ({
   const [internalValue, setInternalValue] = useState(defaultValue);
   const [isDragging, setIsDragging] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
-  const [isHoverDevice, setIsHoverDevice] = useState(false);
+  // Initialize state with the function call instead of setting it in useEffect
+  const [isHoverDevice, setIsHoverDevice] = useState(getIsHoverDevice);
 
   const isControlled = controlledValue !== undefined;
   const value = isControlled ? controlledValue : internalValue;
@@ -58,9 +65,9 @@ const Scrubber = ({
   const percentage = range > 0 ? ((value - min) / range) * 100 : 0;
   const isActive = isDragging || (isHoverDevice && isHovering);
 
+  // Only subscribe to changes, don't set initial state
   useEffect(() => {
     const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
-    setIsHoverDevice(mq.matches);
     const onChange = (e: MediaQueryListEvent) => setIsHoverDevice(e.matches);
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
@@ -72,7 +79,7 @@ const Scrubber = ({
       if (!isControlled) setInternalValue(clamped);
       onValueChange?.(clamped);
     },
-    [step, min, max, isControlled, onValueChange]
+    [step, min, max, isControlled, onValueChange],
   );
 
   const getValueFromPointer = useCallback(
@@ -83,7 +90,7 @@ const Scrubber = ({
       const ratio = clamp((clientX - rect.left) / rect.width, 0, 1);
       return min + ratio * range;
     },
-    [min, range, value]
+    [min, range, value],
   );
 
   const handlePointerDown = useCallback(
@@ -93,7 +100,7 @@ const Scrubber = ({
       setIsDragging(true);
       setValue(getValueFromPointer(e.clientX));
     },
-    [getValueFromPointer, setValue]
+    [getValueFromPointer, setValue],
   );
 
   const handlePointerMove = useCallback(
@@ -101,7 +108,7 @@ const Scrubber = ({
       if (!isDragging) return;
       setValue(getValueFromPointer(e.clientX));
     },
-    [isDragging, getValueFromPointer, setValue]
+    [isDragging, getValueFromPointer, setValue],
   );
 
   const handlePointerUp = useCallback(() => {
@@ -132,7 +139,7 @@ const Scrubber = ({
       e.preventDefault();
       setValue(next);
     },
-    [value, step, min, max, setValue]
+    [value, step, min, max, setValue],
   );
 
   const springConfig = shouldReduceMotion

@@ -20,7 +20,6 @@ import {
   ArrowUp01Icon,
   PaintBrushIcon,
   DropletIcon,
-  TextFontIcon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import {

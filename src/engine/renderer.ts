@@ -488,16 +488,19 @@ function processChildNodes(
     let type: BlockType = "paragraph";
 
     switch (tag) {
-      case "h1":
+      case "h1": {
         type = "heading1";
         break;
-      case "h2":
+      }
+      case "h2": {
         type = "heading2";
         break;
-      case "h3":
+      }
+      case "h3": {
         type = "heading3";
         break;
-      case "blockquote":
+      }
+      case "blockquote": {
         type = "blockquote";
         const bqChildren = el.children;
         if (bqChildren.length > 0) {
@@ -513,6 +516,7 @@ function processChildNodes(
           continue;
         }
         break;
+      }
     }
 
     const spans = extractInlineSpans(el);

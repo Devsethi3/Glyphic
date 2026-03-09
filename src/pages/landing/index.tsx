@@ -2,34 +2,11 @@ import { Link } from "react-router-dom";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowRight01Icon,
-  TextIcon,
-  PaintBrush01Icon,
-  ImageDownloadIcon,
   GithubIcon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import GrainyShader from "@/components/grainy-background";
 
-const features = [
-  {
-    icon: TextIcon,
-    title: "Write",
-    description:
-      "A distraction-free rich text editor with floating formatting — just write.",
-  },
-  {
-    icon: PaintBrush01Icon,
-    title: "Style",
-    description:
-      "16+ handcrafted themes with custom fonts, colors, and typography controls.",
-  },
-  {
-    icon: ImageDownloadIcon,
-    title: "Export",
-    description:
-      "One-click export to high-resolution PNG or SVG. Gallery-ready in seconds.",
-  },
-];
 
 export function LandingPage() {
   return (
