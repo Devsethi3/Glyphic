@@ -4,11 +4,14 @@ import { shapes } from "@/data/shapes";
 
 // ============================================================
 // FONT SIZE CONFIGURATION
+// Adjust BASE_SIZE_RATIO to change the default canvas text size
+// 0.065 = 6.5% of content width
+// For 1080px square with 10% padding: contentWidth=864, base=~56px
 // ============================================================
 const FONT_CONFIG = {
-  BASE_SIZE_RATIO: 0.055,
-  MAX_BASE_SIZE: 64,
-  MIN_BASE_SIZE: 18,
+  BASE_SIZE_RATIO: 0.065,
+  MAX_BASE_SIZE: 72,
+  MIN_BASE_SIZE: 20,
   HEADING1_SCALE: 1.8,
   HEADING2_SCALE: 1.45,
   HEADING3_SCALE: 1.25,
@@ -33,6 +36,7 @@ interface InlineSpan {
   superscript: boolean;
   subscript: boolean;
   smallCaps: boolean;
+  fontSize: number | null; // null means use block default
 }
 
 type BlockType =
@@ -86,6 +90,7 @@ interface WordSpan {
   superscript: boolean;
   subscript: boolean;
   smallCaps: boolean;
+  fontSize: number | null;
   trailingSpace?: boolean;
 }
 
@@ -100,6 +105,7 @@ const DEFAULT_SPAN: Omit<InlineSpan, "text"> = {
   superscript: false,
   subscript: false,
   smallCaps: false,
+  fontSize: null,
 };
 
 // ---- Main Render ----
@@ -139,7 +145,16 @@ export function renderCanvas(
   const contentHeight = baseHeight - paddingY * 2;
 
   if (!config.text.trim()) {
-    drawPlaceholder(ctx, config, baseWidth, baseHeight);
+    drawPlaceholder(
+      ctx,
+      config,
+      baseWidth,
+      baseHeight,
+      contentWidth,
+      contentHeight,
+      paddingX,
+      paddingY,
+    );
     return;
   }
 
@@ -208,20 +223,39 @@ function drawBackground(
   }
 }
 
+// ---- Placeholder ----
+
 function drawPlaceholder(
   ctx: CanvasRenderingContext2D,
   config: RenderConfig,
-  width: number,
-  height: number,
+  canvasWidth: number,
+  canvasHeight: number,
+  contentWidth: number,
+  contentHeight: number,
+  paddingX: number,
+  paddingY: number,
 ): void {
   ctx.save();
-  ctx.fillStyle = config.textColor;
-  ctx.globalAlpha = 0.25;
-  const size = Math.max(width * 0.028, 20);
-  ctx.font = `italic ${size}px "${config.fontFamily}", serif`;
+
+  const placeholderText = "Your text will appear here...";
+  // Scale placeholder font size relative to content width so it looks
+  // proportional across all shapes (square, portrait, landscape, vertical)
+  const fontSize = Math.max(contentWidth * 0.038, 22);
+
+  ctx.font = `italic 400 ${fontSize}px "${config.fontFamily}", serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("Your styled text will appear here...", width / 2, height / 2);
+
+  // Use the theme text color at reduced opacity for clear visibility
+  ctx.fillStyle = config.textColor;
+  ctx.globalAlpha = 0.4;
+
+  // Center within the content area, not the full canvas
+  const centerX = paddingX + contentWidth / 2;
+  const centerY = paddingY + contentHeight / 2;
+
+  ctx.fillText(placeholderText, centerX, centerY);
+
   ctx.restore();
 }
 
@@ -408,9 +442,8 @@ function processListItems(
     }
 
     orderIndex++;
-
-    if (nestedUl) processListItems(nestedUl, "bullet-item", blocks, depth + 1);
-    if (nestedOl) processListItems(nestedOl, "ordered-item", blocks, depth + 1);
+    if (nestedUl) processListItems(nestedUl as HTMLElement, "bullet-item", blocks, depth + 1);
+    if (nestedOl) processListItems(nestedOl as HTMLElement, "ordered-item", blocks, depth + 1);
   }
 }
 
@@ -461,11 +494,9 @@ function walkInlineNodes(
       el.style.backgroundColor ||
       null;
     if (bgColor) current.highlight = bgColor.trim();
-    // IMPORTANT: Do NOT extract color from <mark> element
-    // Let the color stay as inherited or be set by a child <span>
   }
 
-  // Style-based formatting from the element's style attribute
+  // Style-based formatting
   const style = el.getAttribute("style") || "";
 
   const fontWeight = extractStyleProperty(style, "font-weight");
@@ -487,8 +518,7 @@ function walkInlineNodes(
     if (textDecoration.includes("line-through")) current.strikethrough = true;
   }
 
-  // Extract text color — but NOT from <mark> elements
-  // <mark> should only contribute highlight, never override text color
+  // Color — skip on <mark> elements
   if (tag !== "mark") {
     const colorValue = extractStyleProperty(style, "color");
     if (colorValue) {
@@ -498,16 +528,36 @@ function walkInlineNodes(
     }
   }
 
+  // Opacity
   const opacityValue = extractStyleProperty(style, "opacity");
   if (opacityValue) {
     const val = parseFloat(opacityValue);
     if (!isNaN(val)) current.opacity = val;
   }
 
+  // Font-variant
   const fontVariant = extractStyleProperty(style, "font-variant");
   if (fontVariant === "small-caps") current.smallCaps = true;
 
-  // Background color from non-mark elements (inline highlight)
+  // Font-size from inline style
+  const fontSizeValue = extractStyleProperty(style, "font-size");
+  if (fontSizeValue) {
+    const parsed = parseFloat(fontSizeValue);
+    if (!isNaN(parsed)) {
+      // Convert to px if needed
+      if (fontSizeValue.includes("rem")) {
+        current.fontSize = parsed * 16; // assume 16px base
+      } else if (fontSizeValue.includes("em")) {
+        // em relative — store as-is, will be multiplied by block font size
+        current.fontSize = parsed * 16;
+      } else {
+        // px or unitless
+        current.fontSize = parsed;
+      }
+    }
+  }
+
+  // Background color from non-mark elements
   if (tag !== "mark") {
     const bgColor = extractStyleProperty(style, "background-color");
     if (bgColor) current.highlight = bgColor.trim();
@@ -557,6 +607,7 @@ function flattenSpansToWords(spans: InlineSpan[]): WordSpan[] {
           superscript: span.superscript,
           subscript: span.subscript,
           smallCaps: span.smallCaps,
+          fontSize: span.fontSize,
         });
       }
     }
@@ -577,6 +628,7 @@ function wordSpanToInlineSpan(w: WordSpan, text: string): InlineSpan {
     superscript: w.superscript,
     subscript: w.subscript,
     smallCaps: w.smallCaps,
+    fontSize: w.fontSize,
   };
 }
 
@@ -591,15 +643,43 @@ function spansMatch(a: InlineSpan | WordSpan, b: WordSpan): boolean {
     a.highlight === b.highlight &&
     a.superscript === b.superscript &&
     a.subscript === b.subscript &&
-    a.smallCaps === b.smallCaps
+    a.smallCaps === b.smallCaps &&
+    a.fontSize === b.fontSize
   );
+}
+
+function resolveSpanFontSize(
+  span: InlineSpan | WordSpan,
+  blockFontSize: number,
+): number {
+  let size = blockFontSize;
+
+  // If span has an explicit font size from the editor, scale it proportionally
+  // Editor font sizes (12px-72px) get mapped relative to the block's base size
+  if (span.fontSize !== null && span.fontSize !== undefined) {
+    // The editor uses pixel values. We scale them relative to a "normal" editor
+    // paragraph size of ~16px so that canvas rendering stays proportional.
+    const editorBasePx = 16;
+    const ratio = span.fontSize / editorBasePx;
+    size = blockFontSize * ratio;
+  }
+
+  if (span.superscript || span.subscript) {
+    size *= 0.7;
+  }
+
+  if (span.smallCaps) {
+    size *= 0.85;
+  }
+
+  return size;
 }
 
 function wrapRichText(
   ctx: CanvasRenderingContext2D,
   spans: InlineSpan[],
   maxWidth: number,
-  fontSize: number,
+  blockFontSize: number,
   fontFamily: string,
   baseFontWeight: number,
   baseFontStyle: string,
@@ -611,20 +691,23 @@ function wrapRichText(
   let currentLineWords: WordSpan[] = [];
   let currentLineWidth = 0;
 
-  ctx.font = buildFont(fontSize, fontFamily, baseFontWeight, baseFontStyle, {
-    ...DEFAULT_SPAN,
-    text: "",
-  });
+  ctx.font = buildFont(
+    blockFontSize,
+    fontFamily,
+    baseFontWeight,
+    baseFontStyle,
+    { ...DEFAULT_SPAN, text: "" },
+  );
   const spaceWidth = ctx.measureText(" ").width;
 
   for (const wordSpan of words) {
-    const spanFontSize =
-      wordSpan.superscript || wordSpan.subscript ? fontSize * 0.7 : fontSize;
+    const spanSize = resolveSpanFontSize(wordSpan, blockFontSize);
     const displayText = wordSpan.smallCaps
       ? wordSpan.word.toUpperCase()
       : wordSpan.word;
+
     ctx.font = buildFont(
-      spanFontSize,
+      spanSize,
       fontFamily,
       baseFontWeight,
       baseFontStyle,
@@ -641,7 +724,7 @@ function wrapRichText(
         buildMeasuredLine(
           ctx,
           currentLineWords,
-          fontSize,
+          blockFontSize,
           fontFamily,
           baseFontWeight,
           baseFontStyle,
@@ -662,7 +745,7 @@ function wrapRichText(
       buildMeasuredLine(
         ctx,
         currentLineWords,
-        fontSize,
+        blockFontSize,
         fontFamily,
         baseFontWeight,
         baseFontStyle,
@@ -677,7 +760,7 @@ function wrapRichText(
 function buildMeasuredLine(
   ctx: CanvasRenderingContext2D,
   words: WordSpan[],
-  fontSize: number,
+  blockFontSize: number,
   fontFamily: string,
   baseFontWeight: number,
   baseFontStyle: string,
@@ -697,11 +780,10 @@ function buildMeasuredLine(
       spans.push(wordSpanToInlineSpan(w, text));
     }
 
-    const spanFontSize =
-      w.superscript || w.subscript ? fontSize * 0.7 : fontSize;
+    const spanSize = resolveSpanFontSize(w, blockFontSize);
     const displayWord = w.smallCaps ? w.word.toUpperCase() : w.word;
     ctx.font = buildFont(
-      spanFontSize,
+      spanSize,
       fontFamily,
       baseFontWeight,
       baseFontStyle,
@@ -920,7 +1002,6 @@ function renderRichTextBlocksCentered(
     if (currentY > paddingY + contentHeight) break;
     currentY += marginTop;
 
-    // Horizontal rule
     if (block.type === "horizontal-rule") {
       ctx.save();
       ctx.strokeStyle = config.textColor;
@@ -937,7 +1018,6 @@ function renderRichTextBlocksCentered(
 
     ctx.save();
 
-    // Drop cap
     if (
       config.dropCap &&
       isFirstParagraph &&
@@ -968,7 +1048,6 @@ function renderRichTextBlocksCentered(
 
     const totalIndent = quoteIndent + bulletIndent;
 
-    // Draw bullet/number
     if (
       (block.type === "bullet-item" || block.type === "ordered-item") &&
       lines.length > 0
@@ -1016,12 +1095,10 @@ function renderRichTextBlocksCentered(
 
       let spanX = lineX;
       for (const span of line.spans) {
-        const isSuperSub = span.superscript || span.subscript;
-        const spanFontSize = isSuperSub ? fontSize * 0.7 : fontSize;
+        const finalFontSize = resolveSpanFontSize(span, fontSize);
         const displayText = span.smallCaps
           ? span.text.toUpperCase()
           : span.text;
-        const finalFontSize = span.smallCaps ? fontSize * 0.85 : spanFontSize;
 
         ctx.font = buildFont(
           finalFontSize,
@@ -1037,17 +1114,11 @@ function renderRichTextBlocksCentered(
         if (span.subscript) yOffset = fontSize * 0.25;
         const spanY = currentY + yOffset;
         const effectiveOpacity = baseOpacity * span.opacity;
+        const textColor = span.color || config.textColor;
 
-        // The text color the user explicitly set (or null)
-        const explicitColor = span.color;
-        // The final color to render text with
-        const textColor = explicitColor || config.textColor;
-
-        // Draw highlight background
         if (span.highlight) {
           ctx.save();
           ctx.fillStyle = span.highlight;
-          // Use full opacity for highlight so it's clearly visible
           ctx.globalAlpha = effectiveOpacity * 0.85;
           const hlPad = 2;
           const hlH = finalFontSize * 1.25;
@@ -1058,8 +1129,6 @@ function renderRichTextBlocksCentered(
           ctx.restore();
         }
 
-        // Draw text — always use the explicit color or theme color
-        // The highlight is drawn BEHIND the text so text is always visible
         ctx.save();
         ctx.fillStyle = textColor;
         ctx.globalAlpha = effectiveOpacity;
@@ -1068,7 +1137,6 @@ function renderRichTextBlocksCentered(
         ctx.fillText(displayText, spanX, spanY);
         ctx.restore();
 
-        // Underline
         if (span.underline) {
           ctx.save();
           ctx.strokeStyle = textColor;
@@ -1081,7 +1149,6 @@ function renderRichTextBlocksCentered(
           ctx.restore();
         }
 
-        // Strikethrough
         if (span.strikethrough) {
           ctx.save();
           ctx.strokeStyle = textColor;
@@ -1099,7 +1166,6 @@ function renderRichTextBlocksCentered(
       currentY += lineHeight;
     }
 
-    // Blockquote bar
     if (isQuote && lines.length > 0) {
       ctx.save();
       ctx.fillStyle = config.textColor;
@@ -1231,7 +1297,16 @@ export function exportCanvas(
   const contentHeight = shapeData.height - paddingY * 2;
 
   if (!config.text.trim()) {
-    drawPlaceholder(ctx, config, shapeData.width, shapeData.height);
+    drawPlaceholder(
+      ctx,
+      config,
+      shapeData.width,
+      shapeData.height,
+      contentWidth,
+      contentHeight,
+      paddingX,
+      paddingY,
+    );
   } else {
     const blocks = parseHtmlToRichBlocks(config.htmlContent);
     renderRichTextBlocksCentered(

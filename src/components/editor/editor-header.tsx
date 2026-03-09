@@ -12,10 +12,8 @@ export function EditorHeader() {
         to="/"
         className="flex items-center gap-2 hover:opacity-80 transition-opacity"
       >
-        <HugeiconsIcon icon={PencilEdit02Icon} size={18} />
-        <span className="text-sm font-semibold tracking-tight hidden sm:inline">
-          Glyphic
-        </span>
+        <img src="/logo.svg" alt="Glyphic" className="size-5 rotate-45" />
+        <span className="text-sm font-semibold tracking-tight">Glyphic</span>
       </Link>
 
       <div className="flex items-center gap-1 sm:gap-1.5">

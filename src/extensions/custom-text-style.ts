@@ -12,9 +12,7 @@ export const CustomTextStyle = TextStyle.extend({
         },
         renderHTML: (attributes: Record<string, unknown>) => {
           if (!attributes.fontVariant) return {};
-          return {
-            style: `font-variant: ${attributes.fontVariant}`,
-          };
+          return { style: `font-variant: ${attributes.fontVariant}` };
         },
       },
       opacity: {
@@ -24,9 +22,17 @@ export const CustomTextStyle = TextStyle.extend({
         },
         renderHTML: (attributes: Record<string, unknown>) => {
           if (!attributes.opacity) return {};
-          return {
-            style: `opacity: ${attributes.opacity}`,
-          };
+          return { style: `opacity: ${attributes.opacity}` };
+        },
+      },
+      fontSize: {
+        default: null,
+        parseHTML: (element: HTMLElement) => {
+          return element.style.fontSize || null;
+        },
+        renderHTML: (attributes: Record<string, unknown>) => {
+          if (!attributes.fontSize) return {};
+          return { style: `font-size: ${attributes.fontSize}` };
         },
       },
     };

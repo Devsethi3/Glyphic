@@ -10,9 +10,9 @@ export function EditorPage() {
 
       <div className="flex-1 flex min-h-0">
         {/* Left Panel - 50% */}
-        <div className="w-1/2 flex flex-col border-r border-border min-h-0">
+        <div className="w-1/2 flex flex-col min-h-0">
           {/* Toolbar - scrollable with fixed max height */}
-          <div className="flex-shrink-0 overflow-y-auto max-h-[45vh] border-b border-border">
+          <div className="flex-shrink-0 overflow-y-auto max-h-[45vh]">
             <EditorToolbar />
           </div>
 

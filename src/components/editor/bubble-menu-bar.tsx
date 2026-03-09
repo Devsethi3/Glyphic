@@ -20,6 +20,7 @@ import {
   ArrowUp01Icon,
   PaintBrushIcon,
   DropletIcon,
+  TextFontIcon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import {
@@ -83,6 +84,22 @@ const OPACITY_LEVELS = [
   { label: "Reset", value: "" },
 ];
 
+const FONT_SIZES = [
+  { label: "Small", value: "12px", preview: 10 },
+  { label: "Default", value: "", preview: 12 },
+  { label: "14px", value: "14px", preview: 12 },
+  { label: "16px", value: "16px", preview: 13 },
+  { label: "18px", value: "18px", preview: 14 },
+  { label: "20px", value: "20px", preview: 14 },
+  { label: "24px", value: "24px", preview: 15 },
+  { label: "28px", value: "28px", preview: 16 },
+  { label: "32px", value: "32px", preview: 17 },
+  { label: "36px", value: "36px", preview: 17 },
+  { label: "48px", value: "48px", preview: 18 },
+  { label: "64px", value: "64px", preview: 19 },
+  { label: "72px", value: "72px", preview: 20 },
+];
+
 function Sep() {
   return <div className="w-px h-4 bg-border mx-0.5 shrink-0" />;
 }
@@ -116,10 +133,7 @@ function MenuButton({
             isActive && "bg-accent text-accent-foreground",
             className,
           )}
-          onMouseDown={(e) => {
-            // Prevent the bubble menu from stealing focus
-            e.preventDefault();
-          }}
+          onMouseDown={(e) => e.preventDefault()}
           onClick={(e) => {
             e.preventDefault();
             onClick();
@@ -197,6 +211,7 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
   const [textColorOpen, setTextColorOpen] = useState(false);
   const [highlightOpen, setHighlightOpen] = useState(false);
   const [opacityOpen, setOpacityOpen] = useState(false);
+  const [fontSizeOpen, setFontSizeOpen] = useState(false);
 
   const handleSetParagraph = useCallback(() => {
     editor.chain().focus().setParagraph().run();
@@ -209,17 +224,11 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
   const handleToggleSmallCaps = useCallback(() => {
     const currentAttrs = editor.getAttributes("textStyle");
     const hasSmallCaps = currentAttrs?.fontVariant === "small-caps";
-
-    if (hasSmallCaps) {
-      // Remove small caps - unset the textStyle mark entirely if no other attrs
-      editor.chain().focus().setMark("textStyle", { fontVariant: null }).run();
-    } else {
-      editor
-        .chain()
-        .focus()
-        .setMark("textStyle", { fontVariant: "small-caps" })
-        .run();
-    }
+    editor
+      .chain()
+      .focus()
+      .setMark("textStyle", { fontVariant: hasSmallCaps ? null : "small-caps" })
+      .run();
   }, [editor]);
 
   const handleSetOpacity = useCallback(
@@ -230,6 +239,19 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
         editor.chain().focus().setMark("textStyle", { opacity }).run();
       }
       setOpacityOpen(false);
+    },
+    [editor],
+  );
+
+  const handleSetFontSize = useCallback(
+    (size: string) => {
+      if (!size) {
+        // Reset to default
+        editor.chain().focus().setMark("textStyle", { fontSize: null }).run();
+      } else {
+        editor.chain().focus().setMark("textStyle", { fontSize: size }).run();
+      }
+      setFontSizeOpen(false);
     },
     [editor],
   );
@@ -261,6 +283,12 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
   const currentTextColor = editor.getAttributes("textStyle")?.color || "";
   const currentHighlight = editor.getAttributes("highlight")?.color || "";
   const currentOpacity = editor.getAttributes("textStyle")?.opacity || "";
+  const currentFontSize = editor.getAttributes("textStyle")?.fontSize || "";
+
+  // Display label for font size button
+  const fontSizeLabel = currentFontSize
+    ? currentFontSize.replace("px", "")
+    : "—";
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -275,7 +303,68 @@ export function BubbleMenuBar({ editor }: BubbleMenuBarProps) {
 
         <Sep />
 
-        {/* Basic formatting - these work directly on any text type */}
+        {/* Font Size */}
+        <Popover open={fontSizeOpen} onOpenChange={setFontSizeOpen}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  className={cn(
+                    "h-7 px-1.5 shrink-0 text-[10px] font-mono font-medium min-w-[32px]",
+                    currentFontSize && "bg-accent text-accent-foreground",
+                  )}
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  {fontSizeLabel}
+                </Button>
+              </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-[10px] px-2 py-1">
+              Font Size
+            </TooltipContent>
+          </Tooltip>
+          <PopoverContent
+            side="bottom"
+            align="start"
+            className="w-auto p-1.5"
+            sideOffset={8}
+          >
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-2 py-1">
+                Font Size
+              </span>
+              {FONT_SIZES.map((size) => (
+                <button
+                  key={size.label}
+                  type="button"
+                  className={cn(
+                    "flex items-center justify-between gap-4 px-2 py-1.5 rounded-md text-xs hover:bg-accent transition-colors text-left min-w-[120px]",
+                    (size.value === currentFontSize ||
+                      (size.value === "" && !currentFontSize)) &&
+                      "bg-accent font-medium",
+                  )}
+                  onClick={() => handleSetFontSize(size.value)}
+                >
+                  <span style={{ fontSize: `${size.preview}px` }}>
+                    {size.label}
+                  </span>
+                  {size.value && (
+                    <span className="text-[10px] text-muted-foreground font-mono">
+                      {size.value}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        <Sep />
+
+        {/* Basic formatting */}
         <MenuButton
           icon={TextBoldIcon}
           title="Bold"
