@@ -40,7 +40,7 @@ export function LineHeightControl() {
       </TooltipProvider>
 
       <PopoverContent
-        className="w-72 p-3"
+        className="w-72 p-3 mr-2"
         align="start"
         side="bottom"
         sideOffset={4}

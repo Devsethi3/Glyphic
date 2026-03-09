@@ -28,7 +28,7 @@ import { themePresets } from "@/data/themes";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import type { RenderConfig } from "@/types";
 
-export function ExportDialog() {
+export function ExportDialog({ children }: { children?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -132,6 +132,13 @@ export function ExportDialog() {
 
   const canExport = content.trim().length > 0;
 
+  const defaultTrigger = (
+    <Button size="sm" className="h-8 text-xs gap-1.5">
+      <HugeiconsIcon icon={ImageDownloadIcon} size={14} />
+      <span>Export</span>
+    </Button>
+  );
+
   // Desktop layout - two columns with preview on right
   const DesktopContent = (
     <div className="grid grid-cols-2 gap-6">
@@ -148,8 +155,9 @@ export function ExportDialog() {
 
         <Button
           onClick={handleExport}
-          className="w-full h-10"
+          className="w-full h-10!"
           disabled={isExporting || !canExport}
+          size="lg"
         >
           {isExporting
             ? "Exporting..."
@@ -175,57 +183,56 @@ export function ExportDialog() {
 
   // Mobile layout - stacked with scrollable area
   const MobileContent = (
-    <ScrollArea className="h-[calc(85vh-8rem)]">
-      <div className="space-y-6 px-4 pb-4">
-        {/* Preview First on Mobile */}
-        <div className="space-y-2">
-          <label className="text-xs font-medium text-muted-foreground">
-            Preview
-          </label>
-          <ExportPreview config={previewConfig} />
+    <div className="flex flex-col h-full max-h-full overflow-hidden">
+      <ScrollArea className="flex-1 h-full">
+        <div className="space-y-6 px-4 pb-4">
+          {/* Preview First on Mobile */}
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground">
+              Preview
+            </label>
+            <ExportPreview config={previewConfig} />
+          </div>
+          <div className="shrink-0 py-3">
+            <Button
+              onClick={handleExport}
+              className="w-full h-10!"
+              disabled={isExporting || !canExport}
+              size="lg"
+            >
+              {isExporting
+                ? "Exporting..."
+                : `Export ${exportFormat.toUpperCase()}`}
+            </Button>
+
+            {!canExport && (
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Write some text to enable export
+              </p>
+            )}
+          </div>
+
+          {/* Controls */}
+          <ExportControls
+            quality={exportQuality}
+            format={exportFormat}
+            themeOverride={exportThemeOverride}
+            onQualityChange={setExportQuality}
+            onFormatChange={setExportFormat}
+            onThemeOverrideChange={setExportThemeOverride}
+          />
         </div>
+      </ScrollArea>
 
-        {/* Controls */}
-        <ExportControls
-          quality={exportQuality}
-          format={exportFormat}
-          themeOverride={exportThemeOverride}
-          onQualityChange={setExportQuality}
-          onFormatChange={setExportFormat}
-          onThemeOverrideChange={setExportThemeOverride}
-        />
-
-        {/* Export Button */}
-        <Button
-          onClick={handleExport}
-          className="w-full h-10"
-          disabled={isExporting || !canExport}
-          size="lg"
-        >
-          {isExporting
-            ? "Exporting..."
-            : `Export ${exportFormat.toUpperCase()}`}
-        </Button>
-
-        {!canExport && (
-          <p className="text-xs text-muted-foreground text-center">
-            Write some text to enable export
-          </p>
-        )}
-      </div>
-    </ScrollArea>
+      {/* Fixed Export Button at bottom */}
+    </div>
   );
 
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button size="sm" className="h-8 text-xs gap-1.5">
-            <HugeiconsIcon icon={ImageDownloadIcon} size={14} />
-            <span>Export</span>
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-4xl! h-[60vh] p-6">
+        <DialogTrigger asChild>{children || defaultTrigger}</DialogTrigger>
+        <DialogContent className="max-w-4xl! p-10">
           <DialogHeader>
             <DialogTitle>Export Image</DialogTitle>
             <DialogDescription>
@@ -240,14 +247,9 @@ export function ExportDialog() {
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>
-        <Button size="sm" className="h-8 text-xs gap-1.5">
-          <HugeiconsIcon icon={ImageDownloadIcon} size={14} />
-          <span>Export</span>
-        </Button>
-      </DrawerTrigger>
-      <DrawerContent className="max-h-[90vh] overflow-hidden">
-        <DrawerHeader className="text-left px-4">
+      <DrawerTrigger asChild>{children || defaultTrigger}</DrawerTrigger>
+      <DrawerContent className="h-[85vh] max-h-[85vh] flex flex-col overflow-hidden">
+        <DrawerHeader className="shrink-0 pb-0">
           <DrawerTitle>Export Image</DrawerTitle>
           <DrawerDescription>
             Configure and download your design

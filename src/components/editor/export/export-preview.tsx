@@ -28,7 +28,7 @@ export function ExportPreview({ config, className }: ExportPreviewProps) {
     <div className={className}>
       <canvas
         ref={canvasRef}
-        className="w-full h-auto rounded-lg border border-border shadow-sm"
+        className="w-full h-auto rounded-md shadow-sm"
         style={{
           maxHeight: "300px",
           objectFit: "contain",

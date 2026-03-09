@@ -37,8 +37,8 @@ export function LandingPage() {
       <div className="min-h-screen max-w-5xl mx-auto flex flex-col">
         <header className="flex items-center justify-between px-6 h-14">
           <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Glyphic" className="size-5" />
-            <span className="text-sm font-semibold tracking-tight">
+            <img src="/logo.svg" alt="Glyphic" className="size-4" />
+            <span className="text-sm font-medium bg-linear-to-b from-foreground to-foreground/70 bg-clip-text text-transparent dark:from-foreground dark:to-foreground/40">
               Glyphic
             </span>
           </div>
@@ -52,26 +52,26 @@ export function LandingPage() {
         <main className="flex-1 flex flex-col justify-center px-6 py-16 sm:py-24">
           <div className="max-w-4xl space-y-6 sm:space-y-8">
             <span className="inline-flex items-center gap-1 rounded-md border border-primary/10 bg-primary/5 px-3 py-1 text-[10px] font-medium text-foreground/80">
-              Open Source | Free Forever
+              Open Source <span className="hidden md:inline">| Free Forever</span>
             </span>
 
             <div className="space-y-2">
-              <h1 className="font-instrument text-5xl sm:text-6xl md:text-7xl lg:text-8xl">
+              <h1 className="font-instrument text-5xl sm:text-6xl md:text-7xl lg:text-8xl bg-linear-to-b from-foreground to-foreground/70 bg-clip-text text-transparent dark:from-foreground dark:to-foreground/40">
                 Craft words
               </h1>
-              <h2 className="font-instrument text-5xl sm:text-6xl md:text-7xl lg:text-8xl ">
+              <h2 className="font-instrument text-5xl sm:text-6xl md:text-7xl lg:text-8xl bg-linear-to-b from-foreground to-foreground/70 bg-clip-text text-transparent dark:from-foreground dark:to-foreground/40 pb-2">
                 worth framing.
               </h2>
             </div>
 
-            <p className="text-base sm:text-lg text-muted-foreground max-w-lg leading-relaxed">
+            <p className="lg:text-base text-sm text-muted-foreground max-w-lg leading-relaxed">
               A minimalist tool for writers and designers. Write with a rich
               editor, style with beautiful themes, and export stunning
               typographic images all in your browser.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-start gap-3 pt-2">
-              <Button size="lg" variant={"link"} asChild className="group">
+            <div className="flex items-start gap-3 pt-2">
+              <Button size="lg" asChild className="group">
                 <Link to="/editor" className="gap-2">
                   Start Creating
                   <HugeiconsIcon
@@ -81,7 +81,7 @@ export function LandingPage() {
                   />
                 </Link>
               </Button>
-              <Button variant="link" size="lg" asChild>
+              <Button variant="secondary" size="lg" asChild>
                 <a
                   href="https://github.com/Devsethi3/Glyphic"
                   target="_blank"

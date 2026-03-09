@@ -26,7 +26,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -150,232 +150,231 @@ export function MobileEditorToolbar() {
   const currentFontSize = editor.getAttributes("textStyle")?.fontSize || "";
 
   return (
-    <div className="w-full overflow-hidden">
-      <ScrollArea className="w-full">
-        <div className="flex items-center gap-1 px-3 py-2 w-max">
-          {/* Font Size */}
-          <Popover open={fontSizeOpen} onOpenChange={setFontSizeOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={cn(
-                  "h-8 px-2 text-xs font-mono shrink-0",
-                  currentFontSize && "bg-accent",
-                )}
-              >
-                {currentFontSize ? currentFontSize.replace("px", "") : "Size"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent side="bottom" className="w-auto p-1" sideOffset={4}>
-              <div className="flex flex-col gap-0.5">
-                {FONT_SIZES.map((size) => (
-                  <button
-                    key={size.label}
-                    type="button"
-                    className={cn(
-                      "px-3 py-2 text-sm text-left rounded hover:bg-accent transition-colors",
-                      (size.value === currentFontSize ||
-                        (size.value === "" && !currentFontSize)) &&
-                        "bg-accent font-medium",
-                    )}
-                    onClick={() => {
-                      if (!size.value) {
-                        editor
-                          .chain()
-                          .focus()
-                          .setMark("textStyle", { fontSize: null })
-                          .run();
-                      } else {
-                        editor
-                          .chain()
-                          .focus()
-                          .setMark("textStyle", { fontSize: size.value })
-                          .run();
-                      }
-                      setFontSizeOpen(false);
-                    }}
-                  >
-                    {size.label}
-                  </button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          <div className="w-px h-6 bg-border mx-1 shrink-0" />
-
-          {/* Basic Formatting */}
-          <ToolbarButton
-            icon={TextBoldIcon}
-            isActive={editor.isActive("bold")}
-            onClick={() => editor.chain().focus().toggleBold().run()}
-          />
-          <ToolbarButton
-            icon={TextItalicIcon}
-            isActive={editor.isActive("italic")}
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-          />
-          <ToolbarButton
-            icon={TextUnderlineIcon}
-            isActive={editor.isActive("underline")}
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
-          />
-          <ToolbarButton
-            icon={TextStrikethroughIcon}
-            isActive={editor.isActive("strike")}
-            onClick={() => editor.chain().focus().toggleStrike().run()}
-          />
-
-          <div className="w-px h-6 bg-border mx-1 shrink-0" />
-
-          {/* Sub/Superscript */}
-          <ToolbarButton
-            icon={ArrowDown01Icon}
-            isActive={editor.isActive("subscript")}
-            onClick={() => editor.chain().focus().toggleSubscript().run()}
-          />
-          <ToolbarButton
-            icon={ArrowUp01Icon}
-            isActive={editor.isActive("superscript")}
-            onClick={() => editor.chain().focus().toggleSuperscript().run()}
-          />
-
-          <div className="w-px h-6 bg-border mx-1 shrink-0" />
-
-          {/* Headings */}
-          <ToolbarButton
-            icon={Heading01Icon}
-            isActive={editor.isActive("heading", { level: 1 })}
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 1 }).run()
-            }
-          />
-          <ToolbarButton
-            icon={Heading02Icon}
-            isActive={editor.isActive("heading", { level: 2 })}
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 2 }).run()
-            }
-          />
-          <ToolbarButton
-            icon={Heading03Icon}
-            isActive={editor.isActive("heading", { level: 3 })}
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 3 }).run()
-            }
-          />
-
-          <div className="w-px h-6 bg-border mx-1 shrink-0" />
-
-          {/* Quote */}
-          <ToolbarButton
-            icon={QuoteDownIcon}
-            isActive={editor.isActive("blockquote")}
-            onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          />
-
-          <div className="w-px h-6 bg-border mx-1 shrink-0" />
-
-          {/* Alignment */}
-          <ToolbarButton
-            icon={TextAlignLeftIcon}
-            isActive={editor.isActive({ textAlign: "left" })}
-            onClick={() => editor.chain().focus().setTextAlign("left").run()}
-          />
-          <ToolbarButton
-            icon={TextAlignCenterIcon}
-            isActive={editor.isActive({ textAlign: "center" })}
-            onClick={() => editor.chain().focus().setTextAlign("center").run()}
-          />
-          <ToolbarButton
-            icon={TextAlignRightIcon}
-            isActive={editor.isActive({ textAlign: "right" })}
-            onClick={() => editor.chain().focus().setTextAlign("right").run()}
-          />
-
-          <div className="w-px h-6 bg-border mx-1 shrink-0" />
-
-          {/* Text Color */}
-          <Popover open={textColorOpen} onOpenChange={setTextColorOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 relative shrink-0"
-              >
-                <HugeiconsIcon icon={PaintBrushIcon} size={16} />
-                <div
-                  className="absolute bottom-1 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full"
-                  style={{
-                    backgroundColor: currentTextColor || "currentColor",
+    <ScrollArea className="w-full">
+      <div className="flex items-center gap-1 px-3 py-2 w-max">
+        {/* Font Size */}
+        <Popover open={fontSizeOpen} onOpenChange={setFontSizeOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-8 px-2 text-xs font-mono shrink-0",
+                currentFontSize && "bg-accent",
+              )}
+            >
+              {currentFontSize ? currentFontSize.replace("px", "") : "Size"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent side="bottom" className="w-auto p-1 ml-2" sideOffset={4}>
+            <div className="flex flex-col gap-0.5">
+              {FONT_SIZES.map((size) => (
+                <button
+                  key={size.label}
+                  type="button"
+                  className={cn(
+                    "px-3 py-2 text-sm text-left rounded hover:bg-accent transition-colors",
+                    (size.value === currentFontSize ||
+                      (size.value === "" && !currentFontSize)) &&
+                      "bg-accent font-medium",
+                  )}
+                  onClick={() => {
+                    if (!size.value) {
+                      editor
+                        .chain()
+                        .focus()
+                        .setMark("textStyle", { fontSize: null })
+                        .run();
+                    } else {
+                      editor
+                        .chain()
+                        .focus()
+                        .setMark("textStyle", { fontSize: size.value })
+                        .run();
+                    }
+                    setFontSizeOpen(false);
                   }}
-                />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent side="bottom" className="w-auto p-0" sideOffset={4}>
-              <ColorGrid
-                colors={TEXT_COLORS}
-                activeColor={currentTextColor}
-                onSelect={(color) => {
-                  if (!color) {
-                    editor.chain().focus().unsetColor().run();
-                  } else {
-                    editor.chain().focus().setColor(color).run();
-                  }
-                  setTextColorOpen(false);
+                >
+                  {size.label}
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        <div className="w-px h-6 bg-border mx-1 shrink-0" />
+
+        {/* Basic Formatting */}
+        <ToolbarButton
+          icon={TextBoldIcon}
+          isActive={editor.isActive("bold")}
+          onClick={() => editor.chain().focus().toggleBold().run()}
+        />
+        <ToolbarButton
+          icon={TextItalicIcon}
+          isActive={editor.isActive("italic")}
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+        />
+        <ToolbarButton
+          icon={TextUnderlineIcon}
+          isActive={editor.isActive("underline")}
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+        />
+        <ToolbarButton
+          icon={TextStrikethroughIcon}
+          isActive={editor.isActive("strike")}
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+        />
+
+        <div className="w-px h-6 bg-border mx-1 shrink-0" />
+
+        {/* Sub/Superscript */}
+        <ToolbarButton
+          icon={ArrowDown01Icon}
+          isActive={editor.isActive("subscript")}
+          onClick={() => editor.chain().focus().toggleSubscript().run()}
+        />
+        <ToolbarButton
+          icon={ArrowUp01Icon}
+          isActive={editor.isActive("superscript")}
+          onClick={() => editor.chain().focus().toggleSuperscript().run()}
+        />
+
+        <div className="w-px h-6 bg-border mx-1 shrink-0" />
+
+        {/* Headings */}
+        <ToolbarButton
+          icon={Heading01Icon}
+          isActive={editor.isActive("heading", { level: 1 })}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 1 }).run()
+          }
+        />
+        <ToolbarButton
+          icon={Heading02Icon}
+          isActive={editor.isActive("heading", { level: 2 })}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 2 }).run()
+          }
+        />
+        <ToolbarButton
+          icon={Heading03Icon}
+          isActive={editor.isActive("heading", { level: 3 })}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 3 }).run()
+          }
+        />
+
+        <div className="w-px h-6 bg-border mx-1 shrink-0" />
+
+        {/* Quote */}
+        <ToolbarButton
+          icon={QuoteDownIcon}
+          isActive={editor.isActive("blockquote")}
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+        />
+
+        <div className="w-px h-6 bg-border mx-1 shrink-0" />
+
+        {/* Alignment */}
+        <ToolbarButton
+          icon={TextAlignLeftIcon}
+          isActive={editor.isActive({ textAlign: "left" })}
+          onClick={() => editor.chain().focus().setTextAlign("left").run()}
+        />
+        <ToolbarButton
+          icon={TextAlignCenterIcon}
+          isActive={editor.isActive({ textAlign: "center" })}
+          onClick={() => editor.chain().focus().setTextAlign("center").run()}
+        />
+        <ToolbarButton
+          icon={TextAlignRightIcon}
+          isActive={editor.isActive({ textAlign: "right" })}
+          onClick={() => editor.chain().focus().setTextAlign("right").run()}
+        />
+
+        <div className="w-px h-6 bg-border mx-1 shrink-0" />
+
+        {/* Text Color */}
+        <Popover open={textColorOpen} onOpenChange={setTextColorOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 relative shrink-0"
+            >
+              <HugeiconsIcon icon={PaintBrushIcon} size={16} />
+              <div
+                className="absolute bottom-1 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full"
+                style={{
+                  backgroundColor: currentTextColor || "currentColor",
                 }}
               />
-            </PopoverContent>
-          </Popover>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent side="bottom" className="w-auto p-0" sideOffset={4}>
+            <ColorGrid
+              colors={TEXT_COLORS}
+              activeColor={currentTextColor}
+              onSelect={(color) => {
+                if (!color) {
+                  editor.chain().focus().unsetColor().run();
+                } else {
+                  editor.chain().focus().setColor(color).run();
+                }
+                setTextColorOpen(false);
+              }}
+            />
+          </PopoverContent>
+        </Popover>
 
-          {/* Highlight */}
-          <Popover open={highlightOpen} onOpenChange={setHighlightOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 relative shrink-0"
-              >
-                <HugeiconsIcon icon={DropletIcon} size={16} />
-                <div
-                  className="absolute bottom-1 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full"
-                  style={{
-                    backgroundColor: currentHighlight || "transparent",
-                    border: currentHighlight
-                      ? "none"
-                      : "1px solid hsl(var(--border))",
-                  }}
-                />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent side="bottom" className="w-auto p-0" sideOffset={4}>
-              <ColorGrid
-                colors={HIGHLIGHT_COLORS}
-                activeColor={currentHighlight}
-                onSelect={(color) => {
-                  if (!color) {
-                    editor.chain().focus().unsetHighlight().run();
-                  } else {
-                    editor.chain().focus().setHighlight({ color }).run();
-                  }
-                  setHighlightOpen(false);
+        {/* Highlight */}
+        <Popover open={highlightOpen} onOpenChange={setHighlightOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 relative shrink-0"
+            >
+              <HugeiconsIcon icon={DropletIcon} size={16} />
+              <div
+                className="absolute bottom-1 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full"
+                style={{
+                  backgroundColor: currentHighlight || "transparent",
+                  border: currentHighlight
+                    ? "none"
+                    : "1px solid hsl(var(--border))",
                 }}
               />
-            </PopoverContent>
-          </Popover>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent side="bottom" className="w-auto p-0" sideOffset={4}>
+            <ColorGrid
+              colors={HIGHLIGHT_COLORS}
+              activeColor={currentHighlight}
+              onSelect={(color) => {
+                if (!color) {
+                  editor.chain().focus().unsetHighlight().run();
+                } else {
+                  editor.chain().focus().setHighlight({ color }).run();
+                }
+                setHighlightOpen(false);
+              }}
+            />
+          </PopoverContent>
+        </Popover>
 
-          <div className="w-px h-6 bg-border mx-1 shrink-0" />
+        <div className="w-px h-6 bg-border mx-1 shrink-0" />
 
-          {/* Clear Formatting */}
-          <ToolbarButton
-            icon={CleanIcon}
-            onClick={() =>
-              editor.chain().focus().clearNodes().unsetAllMarks().run()
-            }
-          />
-        </div>
-      </ScrollArea>
-    </div>
+        {/* Clear Formatting */}
+        <ToolbarButton
+          icon={CleanIcon}
+          onClick={() =>
+            editor.chain().focus().clearNodes().unsetAllMarks().run()
+          }
+        />
+      </div>
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
   );
 }

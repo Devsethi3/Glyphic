@@ -14,8 +14,10 @@ export function EditorHeader() {
         to="/"
         className="flex items-center gap-2 hover:opacity-80 transition-opacity"
       >
-        <img src="/logo.svg" alt="Glyphic" className="size-5" />
-        <span className="text-sm font-semibold tracking-tight">Glyphic</span>
+        <img src="/logo.svg" alt="Glyphic" className="size-4" />
+        <span className="text-sm font-medium bg-linear-to-b from-foreground to-foreground/70 bg-clip-text text-transparent dark:from-foreground dark:to-foreground/40">
+          Glyphic
+        </span>
       </Link>
 
       {isDesktop ? (

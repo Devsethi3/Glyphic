@@ -5,7 +5,11 @@ import { renderCanvas } from "@/engine/renderer";
 import { shapes } from "@/data/shapes";
 import type { RenderConfig } from "@/types";
 
-export function EditorCanvas() {
+interface EditorCanvasProps {
+  isMobile?: boolean;
+}
+
+export function EditorCanvas({ isMobile = false }: EditorCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -51,8 +55,12 @@ export function EditorCanvas() {
     const shapeData = shapes[shape];
     const containerRect = container.getBoundingClientRect();
 
-    const maxWidth = containerRect.width - 48;
-    const maxHeight = containerRect.height - 48;
+    // Mobile: use full container size (no padding deduction)
+    // Desktop: subtract padding for better spacing
+    const maxWidth = isMobile ? containerRect.width : containerRect.width - 48;
+    const maxHeight = isMobile
+      ? containerRect.height
+      : containerRect.height - 48;
 
     if (maxWidth <= 0 || maxHeight <= 0) return;
 
@@ -65,7 +73,7 @@ export function EditorCanvas() {
 
     canvas.style.width = `${displayWidth}px`;
     canvas.style.height = `${displayHeight}px`;
-  }, [shape]);
+  }, [shape, isMobile]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -113,14 +121,21 @@ export function EditorCanvas() {
       ref={containerRef}
       className="w-full h-full flex items-center justify-center overflow-hidden"
     >
-      <div className="flex items-center justify-center w-full h-full">
+      <div
+        className={
+          isMobile
+            ? "flex items-center justify-center w-full h-full"
+            : "flex items-center justify-center w-full h-full p-6"
+        }
+      >
         <canvas
           ref={canvasRef}
           className="canvas-container"
           style={{
-            borderRadius: "20px",
-            boxShadow:
-              "0 8px 32px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2)",
+            borderRadius: isMobile ? "15px" : "20px",
+            boxShadow: isMobile
+              ? "none"
+              : "0 8px 32px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2)",
           }}
         />
       </div>
