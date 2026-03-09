@@ -433,6 +433,11 @@ canvas {
     height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   will-change: width, height;
 }
+@media (max-width: 640px) {
+  .canvas-container {
+    transition: none;
+  }
+}
 
 /* Smooth scrolling for panels */
 .overflow-y-auto {

@@ -148,9 +148,8 @@ export function ExportDialog() {
 
         <Button
           onClick={handleExport}
-          className="w-full"
+          className="w-full h-10"
           disabled={isExporting || !canExport}
-          size="lg"
         >
           {isExporting
             ? "Exporting..."
@@ -199,7 +198,7 @@ export function ExportDialog() {
         {/* Export Button */}
         <Button
           onClick={handleExport}
-          className="w-full"
+          className="w-full h-10"
           disabled={isExporting || !canExport}
           size="lg"
         >
@@ -226,7 +225,7 @@ export function ExportDialog() {
             <span>Export</span>
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-4xl!">
+        <DialogContent className="max-w-4xl! h-[60vh] p-6">
           <DialogHeader>
             <DialogTitle>Export Image</DialogTitle>
             <DialogDescription>
@@ -247,7 +246,7 @@ export function ExportDialog() {
           <span>Export</span>
         </Button>
       </DrawerTrigger>
-      <DrawerContent className="max-h-[90vh]">
+      <DrawerContent className="max-h-[90vh] overflow-hidden">
         <DrawerHeader className="text-left px-4">
           <DrawerTitle>Export Image</DrawerTitle>
           <DrawerDescription>

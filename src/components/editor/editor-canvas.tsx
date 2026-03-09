@@ -40,7 +40,7 @@ export function EditorCanvas() {
     paddingVertical,
     shape,
     paperTexture,
-    noiseIntensity, 
+    noiseIntensity,
   };
 
   const updateCanvasSize = useCallback(() => {
@@ -113,7 +113,7 @@ export function EditorCanvas() {
       ref={containerRef}
       className="w-full h-full flex items-center justify-center overflow-hidden"
     >
-      <div className="flex items-center justify-center p-6 w-full h-full">
+      <div className="flex items-center justify-center w-full h-full">
         <canvas
           ref={canvasRef}
           className="canvas-container"
