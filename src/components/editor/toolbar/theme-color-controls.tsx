@@ -19,6 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import Scrubber from "@/components/smoothui/scrubber";
 import { cn } from "@/lib/utils";
 
 export function ThemeColorControls() {
@@ -26,10 +27,12 @@ export function ThemeColorControls() {
   const textColor = useEditorStore((s) => s.textColor);
   const colorMode = useEditorStore((s) => s.colorMode);
   const paperTexture = useEditorStore((s) => s.paperTexture);
+  const noiseIntensity = useEditorStore((s) => s.noiseIntensity);
   const setBackgroundColor = useEditorStore((s) => s.setBackgroundColor);
   const setTextColor = useEditorStore((s) => s.setTextColor);
   const setColorMode = useEditorStore((s) => s.setColorMode);
   const setPaperTexture = useEditorStore((s) => s.setPaperTexture);
+  const setNoiseIntensity = useEditorStore((s) => s.setNoiseIntensity);
   const randomizeTheme = useEditorStore((s) => s.randomizeTheme);
 
   return (
@@ -128,6 +131,28 @@ export function ThemeColorControls() {
             <HugeiconsIcon icon={ScrollIcon} size={14} />
             Paper Texture
           </button>
+
+          {/* Noise Intensity Scrubber - Only visible when paper texture is enabled */}
+          {paperTexture && (
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium">Texture Intensity</label>
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {Math.round(noiseIntensity * 100)}%
+                </span>
+              </div>
+              <Scrubber
+                label=""
+                value={noiseIntensity}
+                onValueChange={setNoiseIntensity}
+                min={0.1}
+                max={1.0}
+                step={0.05}
+                decimals={2}
+                ticks={5}
+              />
+            </div>
+          )}
 
           <div className="flex gap-2">
             <button

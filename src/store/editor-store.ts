@@ -40,6 +40,7 @@ interface PersistedState {
   exportQuality: ExportQuality;
   exportFormat: ExportFormat;
   paperTexture: boolean;
+  noiseIntensity: number;
 }
 
 function loadPersistedState(): Partial<PersistedState> | null {
@@ -94,7 +95,7 @@ interface EditorState {
   gradientColors: string[];
   gradientAngle: number;
   paperTexture: boolean;
-  setPaperTexture: (enabled: boolean) => void;
+  noiseIntensity: number;
 
   // Padding
   paddingLocked: boolean;
@@ -134,6 +135,8 @@ interface EditorState {
   setExportFormat: (format: ExportFormat) => void;
   setExportThemeOverride: (override: string | null) => void;
   setEditorRef: (editor: Editor | null) => void;
+  setPaperTexture: (enabled: boolean) => void;
+  setNoiseIntensity: (value: number) => void;
 }
 
 function getStateToPersist(state: EditorState): PersistedState {
@@ -141,7 +144,6 @@ function getStateToPersist(state: EditorState): PersistedState {
     version: STORAGE_VERSION,
     content: state.content,
     htmlContent: state.htmlContent,
-    paperTexture: state.paperTexture,
     fontFamily: state.fontFamily,
     lineHeight: state.lineHeight,
     dropCap: state.dropCap,
@@ -158,6 +160,8 @@ function getStateToPersist(state: EditorState): PersistedState {
     shape: state.shape,
     exportQuality: state.exportQuality,
     exportFormat: state.exportFormat,
+    paperTexture: state.paperTexture,
+    noiseIntensity: state.noiseIntensity,
   };
 }
 
@@ -178,7 +182,6 @@ export const useEditorStore = create<EditorState>()(
     return {
       // Initial state - merge with persisted
       content: persisted?.content ?? "",
-      paperTexture: persisted?.paperTexture ?? false,
       htmlContent: persisted?.htmlContent ?? "",
       fontFamily: persisted?.fontFamily ?? "EB Garamond",
       lineHeight: persisted?.lineHeight ?? 1.7,
@@ -199,10 +202,10 @@ export const useEditorStore = create<EditorState>()(
       exportThemeOverride: null,
       editorRef: null,
       _hydrated: !!persisted,
+      paperTexture: persisted?.paperTexture ?? false,
+      noiseIntensity: persisted?.noiseIntensity ?? 0.75,
 
       // Actions with persistence
-      setPaperTexture: (paperTexture) =>
-        persistSet({ paperTexture, activePreset: null }),
       setContent: (content) => persistSet({ content }),
       setHtmlContent: (htmlContent) => persistSet({ htmlContent }),
 
@@ -276,7 +279,6 @@ export const useEditorStore = create<EditorState>()(
 
         persistSet({
           fontFamily: preset.fontFamily,
-          paperTexture: preset.paperTexture ?? false,
           lineHeight: preset.lineHeight,
           dropCap: preset.dropCap,
           backgroundColor: preset.backgroundColor,
@@ -286,6 +288,7 @@ export const useEditorStore = create<EditorState>()(
           backgroundType: preset.backgroundType,
           gradientColors: preset.gradientColors || [],
           gradientAngle: preset.gradientAngle || 0,
+          paperTexture: preset.paperTexture ?? false,
         });
       },
 
@@ -319,6 +322,12 @@ export const useEditorStore = create<EditorState>()(
         set({ exportThemeOverride }),
 
       setEditorRef: (editorRef) => set({ editorRef }),
+
+      setPaperTexture: (paperTexture) =>
+        persistSet({ paperTexture, activePreset: null }),
+
+      setNoiseIntensity: (noiseIntensity) =>
+        persistSet({ noiseIntensity, activePreset: null }),
     };
   }),
 );

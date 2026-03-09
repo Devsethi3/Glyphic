@@ -143,7 +143,13 @@ export function renderCanvas(
   // Draw paper texture after background, before text
   if (config.paperTexture) {
     const luminance = getLuminance(config.backgroundColor);
-    drawPaperTexture(ctx, baseWidth, baseHeight, luminance < 0.5);
+    drawPaperTexture(
+      ctx,
+      baseWidth,
+      baseHeight,
+      luminance < 0.5,
+      config.noiseIntensity, // Pass the intensity
+    );
   }
 
   const paddingX = (config.paddingHorizontal / 100) * baseWidth;
@@ -287,18 +293,18 @@ function extractStyleProperty(style: string, property: string): string | null {
   }
   return null;
 }
-
 // ---- Paper Noise Texture ----
 
 let noiseCanvas: HTMLCanvasElement | null = null;
 let noiseWidth = 0;
 let noiseHeight = 0;
 
-function getNoiseCanvas(width: number, height: number): HTMLCanvasElement {
-  // Cache the noise canvas — regenerate only if size changes
-  if (noiseCanvas && noiseWidth === width && noiseHeight === height) {
-    return noiseCanvas;
-  }
+function getNoiseCanvas(
+  width: number,
+  height: number,
+  intensity: number,
+): HTMLCanvasElement {
+  noiseCanvas = null;
 
   noiseCanvas = document.createElement("canvas");
   noiseCanvas.width = width;
@@ -312,13 +318,38 @@ function getNoiseCanvas(width: number, height: number): HTMLCanvasElement {
   const imageData = ctx.createImageData(width, height);
   const data = imageData.data;
 
+  // ⚙️ DENSITY: controlled by intensity parameter (0.1 to 1.0)
+  // Higher intensity = more noise particles
+  const densityThreshold = 1 - intensity;
+
+  // ⚙️ ALPHA RANGE: scales with intensity
+  const minAlpha = Math.floor(3 + intensity * 5); // 3-8
+  const alphaRange = Math.floor(15 + intensity * 15); // 15-30
+
   for (let i = 0; i < data.length; i += 4) {
-    // Generate subtle grain — random grayscale value
-    const grain = Math.random() * 255;
-    data[i] = grain; // R
-    data[i + 1] = grain; // G
-    data[i + 2] = grain; // B
-    data[i + 3] = 255; // A (full, we control opacity via globalAlpha)
+    const r = Math.random();
+
+    if (r > densityThreshold) {
+      data[i] = 0;
+      data[i + 1] = 0;
+      data[i + 2] = 0;
+      data[i + 3] = 0;
+      continue;
+    }
+
+    const isBright = Math.random() > 0.5;
+
+    if (isBright) {
+      data[i] = 255;
+      data[i + 1] = 255;
+      data[i + 2] = 255;
+      data[i + 3] = Math.floor(Math.random() * alphaRange) + minAlpha;
+    } else {
+      data[i] = 0;
+      data[i + 1] = 0;
+      data[i + 2] = 0;
+      data[i + 3] = Math.floor(Math.random() * alphaRange) + minAlpha;
+    }
   }
 
   ctx.putImageData(imageData, 0, 0);
@@ -329,23 +360,15 @@ function drawPaperTexture(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  isDarkBackground: boolean,
+  _isDarkBackground: boolean,
+  intensity: number, // Add this parameter
 ): void {
+  const noise = getNoiseCanvas(Math.ceil(width), Math.ceil(height), intensity);
+
   ctx.save();
-
-  // Use a noise pattern at very low opacity
-  // Lighter on dark backgrounds, darker on light backgrounds
-  const opacity = isDarkBackground ? 0.06 : 0.04;
-  ctx.globalAlpha = opacity;
-
-  // Use "overlay" for dark backgrounds (adds subtle light grain)
-  // Use "multiply" for light backgrounds (adds subtle dark grain)
-  ctx.globalCompositeOperation = isDarkBackground ? "overlay" : "multiply";
-
-  const noise = getNoiseCanvas(Math.ceil(width), Math.ceil(height));
-
+  ctx.globalCompositeOperation = "source-over";
+  ctx.globalAlpha = 1;
   ctx.drawImage(noise, 0, 0, width, height);
-
   ctx.restore();
 }
 
@@ -1351,6 +1374,7 @@ function renderDropCapRich(
 }
 
 // ---- Export ----
+// src/engine/renderer.ts
 
 export function exportCanvas(
   config: RenderConfig,
@@ -1374,10 +1398,16 @@ export function exportCanvas(
 
   drawBackground(ctx, config, shapeData.width, shapeData.height);
 
-  // Paper texture for exports too
+  // Paper texture for exports too - pass the intensity parameter
   if (config.paperTexture) {
     const luminance = getLuminance(config.backgroundColor);
-    drawPaperTexture(ctx, shapeData.width, shapeData.height, luminance < 0.5);
+    drawPaperTexture(
+      ctx,
+      shapeData.width,
+      shapeData.height,
+      luminance < 0.5,
+      config.noiseIntensity, // ← Add this parameter
+    );
   }
 
   const paddingX = (config.paddingHorizontal / 100) * shapeData.width;

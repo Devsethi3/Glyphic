@@ -23,6 +23,7 @@ export function EditorCanvas() {
   const paddingVertical = useEditorStore((s) => s.paddingVertical);
   const shape = useEditorStore((s) => s.shape);
   const paperTexture = useEditorStore((s) => s.paperTexture);
+  const noiseIntensity = useEditorStore((s) => s.noiseIntensity);
 
   const config: RenderConfig = {
     text: content,
@@ -39,6 +40,7 @@ export function EditorCanvas() {
     paddingVertical,
     shape,
     paperTexture,
+    noiseIntensity, 
   };
 
   const updateCanvasSize = useCallback(() => {
@@ -90,6 +92,7 @@ export function EditorCanvas() {
     paddingVertical,
     shape,
     paperTexture,
+    noiseIntensity,
     updateCanvasSize,
   ]);
 

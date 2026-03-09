@@ -82,6 +82,7 @@ export interface RenderConfig {
   lineHeight: number;
   dropCap: boolean;
   paperTexture: boolean;
+  noiseIntensity: number;
   backgroundColor: string;
   textColor: string;
   backgroundType: BackgroundType;
