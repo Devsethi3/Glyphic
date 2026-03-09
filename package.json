@@ -1,8 +1,37 @@
 {
   "name": "glyphic",
+  "version": "1.0.0",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
+  "description": "Transform text into beautiful visual designs. Create stunning images from your words.",
+  "author": {
+    "name": "Dev Sethi",
+    "url": "https://devsethi.site",
+    "email": "work.devsethi@gmail.com"
+  },
+  "homepage": "https://glyphic.devsethi.site",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devsethi3/glyphic.git"
+  },
+  "bugs": {
+    "url": "https://github.com/devsethi3/glyphic/issues"
+  },
+  "keywords": [
+    "text-design",
+    "typography",
+    "visual-design",
+    "quote-generator",
+    "text-to-image",
+    "design-tool",
+    "canvas",
+    "image-generator",
+    "react",
+    "typescript",
+    "vite",
+    "tailwindcss"
+  ],
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

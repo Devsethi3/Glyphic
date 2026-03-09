@@ -1,0 +1,10 @@
+# Allow all crawlers
+User-agent: *
+Allow: /
+Allow: /editor
+
+# Disallow API routes if any
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://glyphic.devsethi.site/sitemap.xml

@@ -1,0 +1,11 @@
+/* TEAM */
+Developer: Dev Sethi
+Site: https://devsethi.site
+Twitter: @imsethidev
+GitHub: devsethi3
+Location: India
+
+/* SITE */
+Standards: HTML5, CSS3, JavaScript
+Components: React, TypeScript, Vite
+Software: VS Code
