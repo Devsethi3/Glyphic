@@ -10,18 +10,13 @@ Write content, customize styling, and export publication-ready images.
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Visit_Site-black?style=for-the-badge)](https://glyphic.devsethi.site)
 [![GitHub Stars](https://img.shields.io/github/stars/devsethi3/glyphic?style=for-the-badge&logo=github&color=yellow)](https://github.com/devsethi3/glyphic)
 
-  <br />
 </div>
 
 <!-- [Features](#-core-features) • [Quick Start](#-getting-started) • [Tech Stack](#-tech-stack) • [Contributing](#-contributing) • [License](#-license) -->
 
-### Landing Page
-
 ![Landing Page](/public/landing.png)
 
-### Editor Page
-
-## ![Editor Page](/public/editor.png)
+![Editor Page](/public/editor.png)
 
 ## Overview
 

@@ -14,7 +14,7 @@ export function EditorHeader() {
         className="flex items-center gap-2 hover:opacity-80 transition-opacity"
       >
         <img src="/logo.svg" alt="Glyphic" className="size-4" />
-        <span className="text-sm font-medium bg-linear-to-b from-foreground to-foreground/70 bg-clip-text text-transparent dark:from-foreground dark:to-foreground/40">
+        <span className="text-sm hidden md:inline font-medium bg-linear-to-b from-foreground to-foreground/70 bg-clip-text text-transparent dark:from-foreground dark:to-foreground/40">
           Glyphic
         </span>
       </Link>
@@ -27,9 +27,10 @@ export function EditorHeader() {
           <ExportDialog />
         </div>
       ) : (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <ShapeSelector />
           <ThemeSelector />
+          <ExportDialog />
         </div>
       )}
     </header>

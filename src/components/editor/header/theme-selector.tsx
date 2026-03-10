@@ -44,7 +44,7 @@ export function ThemeSelector() {
   };
 
   const ThemeButton = (
-    <Button variant="ghost" size="sm" className="h-8 gap-1.5">
+    <Button variant="outline" size="sm" className="h-8 gap-1.5">
       <HugeiconsIcon icon={PaintBoardIcon} size={14} />
       <span>Themes</span>
     </Button>

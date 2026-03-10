@@ -51,7 +51,7 @@ export function ShapeSelector() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 text-xs gap-2">
+        <Button variant="outline" size="sm" className="h-8 text-xs gap-2">
           <ShapeIcon shape={shape} active />
           <span>{shapeLabels[shape]}</span>
         </Button>

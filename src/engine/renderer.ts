@@ -18,7 +18,6 @@ const FONT_CONFIG = {
   BLOCKQUOTE_SCALE: 1.0,
   DROP_CAP_SCALE: 3.2,
 };
-// ============================================================
 
 const getPixelRatio = () => Math.min(window.devicePixelRatio || 1, 3);
 
@@ -36,7 +35,7 @@ interface InlineSpan {
   superscript: boolean;
   subscript: boolean;
   smallCaps: boolean;
-  fontSize: number | null; // null means use block default
+  fontSize: number | null;
 }
 
 type BlockType =
@@ -148,6 +147,7 @@ export function renderCanvas(
       baseHeight,
       luminance < 0.5,
       config.noiseIntensity,
+      false, // not export
     );
   }
 
@@ -160,8 +160,6 @@ export function renderCanvas(
     drawPlaceholder(
       ctx,
       config,
-      // baseWidth,
-      // baseHeight,
       contentWidth,
       contentHeight,
       paddingX,
@@ -249,8 +247,6 @@ function drawPlaceholder(
 
   const placeholderText = "Start writing...";
 
-  // Use a larger font size — proportional to content width like body text
-  // but slightly smaller than the main body text would be
   const baseFontSize = calculateBaseFontSize(config.shape, contentWidth);
   const fontSize = baseFontSize * 0.85;
 
@@ -258,12 +254,9 @@ function drawPlaceholder(
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  // Use the exact theme text color at reduced opacity
-  // This ensures it looks correct on both light and dark backgrounds
   ctx.fillStyle = config.textColor;
   ctx.globalAlpha = 0.35;
 
-  // Center within the content area
   const centerX = paddingX + contentWidth / 2;
   const centerY = paddingY + contentHeight / 2;
 
@@ -291,139 +284,158 @@ function extractStyleProperty(style: string, property: string): string | null {
   return null;
 }
 
-// Paper noise texture
+// ---- Paper Noise Texture (HEAVILY OPTIMIZED) ----
 
-let noiseCanvas: HTMLCanvasElement | null = null;
-let noiseWidth = 0;
-let noiseHeight = 0;
-let lastIntensity = 0;
+// Cache for noise patterns - single small tile
+let cachedNoisePattern: HTMLCanvasElement | null = null;
+let cachedIntensity = -1;
 
-function getNoiseCanvas(
-  width: number,
-  height: number,
-  intensity: number,
-): HTMLCanvasElement {
-  // Regenerate if dimensions or intensity changed
-  if (
-    noiseCanvas &&
-    noiseWidth === width &&
-    noiseHeight === height &&
-    Math.abs(lastIntensity - intensity) < 0.01
-  ) {
-    return noiseCanvas;
+/**
+ * Generate a tiny tileable noise pattern
+ * This creates a very small canvas (128x128) that tiles seamlessly
+ */
+function generateTinyNoisePattern(intensity: number): HTMLCanvasElement {
+  // Check cache
+  if (cachedNoisePattern && Math.abs(cachedIntensity - intensity) < 0.01) {
+    return cachedNoisePattern;
   }
 
-  noiseCanvas = document.createElement("canvas");
-  noiseCanvas.width = width;
-  noiseCanvas.height = height;
-  noiseWidth = width;
-  noiseHeight = height;
-  lastIntensity = intensity;
+  // Create tiny tile - this is the key to small file sizes
+  const TILE_SIZE = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = TILE_SIZE;
+  canvas.height = TILE_SIZE;
 
-  const ctx = noiseCanvas.getContext("2d", { willReadFrequently: true });
-  if (!ctx) return noiseCanvas;
+  const ctx = canvas.getContext("2d", {
+    willReadFrequently: true,
+    alpha: true,
+  });
+  if (!ctx) return canvas;
 
-  const imageData = ctx.createImageData(width, height);
+  const imageData = ctx.createImageData(TILE_SIZE, TILE_SIZE);
   const data = imageData.data;
 
-  // ⚙️ DENSITY: controlled by intensity parameter (0.1 to 1.0)
-  // Higher intensity = more noise particles
-  const densityThreshold = 1 - intensity;
+  // Very sparse noise for better compression
+  const sparsity = 0.92 - intensity * 0.15; // 92-77% transparent pixels
 
-  // ⚙️ ALPHA RANGE: significantly increased for visibility
-  // Scales with intensity for more pronounced effect
-  const minAlpha = Math.floor(8 + intensity * 15); // 8-23
-  const alphaRange = Math.floor(20 + intensity * 40); // 20-60
-
-  // Add variation in particle sizes for more realistic texture
-  const useCluster = Math.random() > 0.7; // 30% chance of clustered particles
+  // Limited alpha values for better compression
+  const alphaLevels = [0, 8, 12, 16, 20, 25, 30]; // Discrete levels compress better
 
   for (let i = 0; i < data.length; i += 4) {
-    const r = Math.random();
+    // Most pixels are transparent
+    if (Math.random() > 1 - sparsity) {
+      // Simplified: only use black or white
+      const isBright = Math.random() > 0.5;
+      const color = isBright ? 255 : 0;
 
-    if (r > densityThreshold) {
+      // Use discrete alpha levels
+      const alphaIndex =
+        Math.floor(Math.random() * (alphaLevels.length - 2)) + 1;
+      const alpha = alphaLevels[alphaIndex];
+
+      data[i] = color;
+      data[i + 1] = color;
+      data[i + 2] = color;
+      data[i + 3] = alpha;
+    } else {
+      // Transparent
       data[i] = 0;
       data[i + 1] = 0;
       data[i + 2] = 0;
       data[i + 3] = 0;
-      continue;
-    }
-
-    // Create variation: 60% bright specks, 40% dark specks for better contrast
-    const isBright = Math.random() > 0.4;
-
-    // Randomly make some particles slightly larger (2x2 clusters)
-    const isLarger = useCluster && Math.random() > 0.85;
-
-    const alpha = Math.floor(Math.random() * alphaRange) + minAlpha;
-
-    if (isBright) {
-      // White/light speck - use slight warm tint for natural paper feel
-      data[i] = 255;
-      data[i + 1] = 253;
-      data[i + 2] = 250;
-      data[i + 3] = alpha;
-    } else {
-      // Dark speck - use slight cool tint for depth
-      data[i] = 10;
-      data[i + 1] = 8;
-      data[i + 2] = 5;
-      data[i + 3] = alpha;
-    }
-
-    // Create occasional larger particles for realistic grain
-    if (isLarger && i + 4 < data.length) {
-      const nextAlpha = Math.floor(alpha * 0.6); // Softer edges
-      data[i + 4] = data[i];
-      data[i + 5] = data[i + 1];
-      data[i + 6] = data[i + 2];
-      data[i + 7] = nextAlpha;
     }
   }
 
   ctx.putImageData(imageData, 0, 0);
 
-  // Apply subtle blur for more organic, film-like grain
-  // This prevents harsh pixel noise and creates smoother texture
-  ctx.filter = "blur(0.3px)";
+  // Very light blur for smoothing
+  ctx.filter = "blur(0.5px)";
   ctx.globalCompositeOperation = "source-over";
-  ctx.globalAlpha = 0.4;
-  ctx.drawImage(noiseCanvas, 0, 0);
+  ctx.globalAlpha = 0.6;
+  ctx.drawImage(canvas, 0, 0);
   ctx.filter = "none";
   ctx.globalAlpha = 1;
 
-  return noiseCanvas;
+  // Cache it
+  cachedNoisePattern = canvas;
+  cachedIntensity = intensity;
+
+  return canvas;
 }
 
+/**
+ * Draw paper texture using tiny tiled pattern
+ */
 function drawPaperTexture(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
   isDarkBackground: boolean,
   intensity: number,
+  _isExport: boolean = false,
 ): void {
-  const noise = getNoiseCanvas(Math.ceil(width), Math.ceil(height), intensity);
+  const noisePattern = generateTinyNoisePattern(intensity);
 
   ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
 
-  // Use multiply blend mode for dark backgrounds, screen for light backgrounds
-  // This ensures texture is visible on any background color
-  if (isDarkBackground) {
-    ctx.globalCompositeOperation = "screen";
-    ctx.globalAlpha = 0.4 + intensity * 0.3; // 0.4-0.7 based on intensity
-  } else {
-    ctx.globalCompositeOperation = "multiply";
-    ctx.globalAlpha = 0.5 + intensity * 0.2; // 0.5-0.7 based on intensity
+  // Create repeating pattern from tiny tile
+  const pattern = ctx.createPattern(noisePattern, "repeat");
+  if (!pattern) {
+    ctx.restore();
+    return;
   }
 
-  ctx.drawImage(noise, 0, 0, width, height);
+  // Base layer
+  if (isDarkBackground) {
+    ctx.globalCompositeOperation = "screen";
+    ctx.globalAlpha = 0.3 + intensity * 0.2;
+  } else {
+    ctx.globalCompositeOperation = "multiply";
+    ctx.globalAlpha = 0.4 + intensity * 0.15;
+  }
 
-  // Add a second layer with different blend mode for depth
+  ctx.fillStyle = pattern;
+  ctx.fillRect(0, 0, width, height);
+
+  // Single subtle overlay
   ctx.globalCompositeOperation = "overlay";
-  ctx.globalAlpha = 0.15 + intensity * 0.15; // 0.15-0.3
-  ctx.drawImage(noise, 0, 0, width, height);
+  ctx.globalAlpha = 0.08 + intensity * 0.08;
+  ctx.fillStyle = pattern;
+  ctx.fillRect(0, 0, width, height);
 
   ctx.restore();
+}
+
+// ---- SVG Paper Texture (Optimized) ----
+
+function createSVGPaperTexture(
+  width: number,
+  height: number,
+  isDark: boolean,
+  intensity: number,
+): string {
+  const filterId = `paper-${Date.now()}`;
+
+  // Optimized turbulence parameters
+  const baseFreq = (0.4 + intensity * 0.2).toFixed(2);
+  const numOctaves = 3; // Reduced from 4 for smaller SVG
+  const opacity = isDark
+    ? (0.3 + intensity * 0.2).toFixed(2)
+    : (0.4 + intensity * 0.15).toFixed(2);
+
+  return `
+    <filter id="${filterId}">
+      <feTurbulence type="fractalNoise" baseFrequency="${baseFreq}" numOctaves="${numOctaves}"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 ${opacity}"/>
+      </feComponentTransfer>
+      <feBlend mode="${isDark ? "screen" : "multiply"}" in2="SourceGraphic"/>
+    </filter>
+    <rect width="${width}" height="${height}" filter="url(#${filterId})" fill="${isDark ? "#fff" : "#000"}"/>
+  `;
 }
 
 // ---- HTML Parsing ----
@@ -708,14 +720,11 @@ function walkInlineNodes(
   if (fontSizeValue) {
     const parsed = parseFloat(fontSizeValue);
     if (!isNaN(parsed)) {
-      // Convert to px if needed
       if (fontSizeValue.includes("rem")) {
-        current.fontSize = parsed * 16; // assume 16px base
+        current.fontSize = parsed * 16;
       } else if (fontSizeValue.includes("em")) {
-        // em relative — store as-is, will be multiplied by block font size
         current.fontSize = parsed * 16;
       } else {
-        // px or unitless
         current.fontSize = parsed;
       }
     }
@@ -818,11 +827,7 @@ function resolveSpanFontSize(
 ): number {
   let size = blockFontSize;
 
-  // If span has an explicit font size from the editor, scale it proportionally
-  // Editor font sizes (12px-72px) get mapped relative to the block's base size
   if (span.fontSize !== null && span.fontSize !== undefined) {
-    // The editor uses pixel values. We scale them relative to a "normal" editor
-    // paragraph size of ~16px so that canvas rendering stays proportional.
     const editorBasePx = 16;
     const ratio = span.fontSize / editorBasePx;
     size = blockFontSize * ratio;
@@ -1431,7 +1436,75 @@ function renderDropCapRich(
   return currentY;
 }
 
-// ---- Export ----
+// ---- Export Functions ----
+
+function exportAsSVG(config: RenderConfig, scale: number): void {
+  const shapeData = shapes[config.shape];
+  const width = shapeData.width * scale;
+  const height = shapeData.height * scale;
+
+  // Create temporary canvas for text rendering
+  const offscreen = document.createElement("canvas");
+  offscreen.width = width;
+  offscreen.height = height;
+  const ctx = offscreen.getContext("2d", { alpha: false });
+  if (!ctx) return;
+
+  ctx.scale(scale, scale);
+  drawBackground(ctx, config, shapeData.width, shapeData.height);
+
+  const paddingX = (config.paddingHorizontal / 100) * shapeData.width;
+  const paddingY = (config.paddingVertical / 100) * shapeData.height;
+  const contentWidth = shapeData.width - paddingX * 2;
+  const contentHeight = shapeData.height - paddingY * 2;
+
+  if (config.text.trim()) {
+    const blocks = parseHtmlToRichBlocks(config.htmlContent);
+    renderRichTextBlocksCentered(
+      ctx,
+      blocks,
+      config,
+      paddingX,
+      paddingY,
+      contentWidth,
+      contentHeight,
+    );
+  } else {
+    drawPlaceholder(
+      ctx,
+      config,
+      contentWidth,
+      contentHeight,
+      paddingX,
+      paddingY,
+    );
+  }
+
+  const dataUrl = offscreen.toDataURL("image/png", 0.92); // Slightly reduced quality
+  const luminance = getLuminance(config.backgroundColor);
+
+  let svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+     width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
+
+  if (config.paperTexture) {
+    svgContent += `<defs>${createSVGPaperTexture(width, height, luminance < 0.5, config.noiseIntensity)}</defs>`;
+  }
+
+  svgContent += `
+  <image xlink:href="${dataUrl}" width="${width}" height="${height}"/>
+</svg>`;
+
+  const blob = new Blob([svgContent], { type: "image/svg+xml" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `glyphic-${Date.now()}.svg`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 
 export function exportCanvas(
   config: RenderConfig,
@@ -1440,6 +1513,14 @@ export function exportCanvas(
 ): void {
   const scaleMap = { standard: 2, high: 3, ultra: 4 };
   const scale = scaleMap[quality];
+
+  // Use SVG for best compression
+  if (format === "svg") {
+    exportAsSVG(config, scale);
+    return;
+  }
+
+  // PNG export with aggressive optimization
   const offscreen = document.createElement("canvas");
   const shapeData = shapes[config.shape];
 
@@ -1458,17 +1539,16 @@ export function exportCanvas(
 
   drawBackground(ctx, config, shapeData.width, shapeData.height);
 
-  // Paper texture for exports - ensure it's visible
+  // Paper texture - same quality for all exports
   if (config.paperTexture) {
     const luminance = getLuminance(config.backgroundColor);
-    // For exports, slightly boost the intensity for better visibility
-    const exportIntensity = Math.min(config.noiseIntensity * 1.1, 1.0);
     drawPaperTexture(
       ctx,
       shapeData.width,
       shapeData.height,
       luminance < 0.5,
-      exportIntensity,
+      config.noiseIntensity,
+      true,
     );
   }
 
@@ -1481,8 +1561,6 @@ export function exportCanvas(
     drawPlaceholder(
       ctx,
       config,
-      // shapeData.width,
-      // shapeData.height,
       contentWidth,
       contentHeight,
       paddingX,
@@ -1501,38 +1579,26 @@ export function exportCanvas(
     );
   }
 
-  if (format === "png") {
-    offscreen.toBlob(
-      (blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `glyphic-${Date.now()}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      },
-      "image/png",
-      1.0,
-    );
-  } else {
-    const dataUrl = offscreen.toDataURL("image/png", 1.0);
-    const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
-     width="${shapeData.width * scale}" height="${shapeData.height * scale}" 
-     viewBox="0 0 ${shapeData.width * scale} ${shapeData.height * scale}">
-  <image xlink:href="${dataUrl}" width="${shapeData.width * scale}" height="${shapeData.height * scale}"/>
-</svg>`;
-    const blob = new Blob([svgContent], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `glyphic-${Date.now()}.svg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }
+  // Quality settings optimized for size vs quality
+  const qualityMap = {
+    standard: 0.92, // ~1-1.5MB
+    high: 0.9, // ~1.5-2MB
+    ultra: 0.88, // ~1.8-2.2MB
+  };
+
+  offscreen.toBlob(
+    (blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `glyphic-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    },
+    "image/png",
+    qualityMap[quality],
+  );
 }
