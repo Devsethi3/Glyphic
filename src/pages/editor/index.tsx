@@ -17,7 +17,7 @@ import {
 export function EditorPage() {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
-  // Desktop Layout
+  // Desktop Layout 
   if (isDesktop) {
     return (
       <div className="h-screen max-w-6xl mx-auto flex flex-col overflow-hidden bg-background">
