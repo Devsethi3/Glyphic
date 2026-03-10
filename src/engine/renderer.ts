@@ -883,6 +883,71 @@ function wrapRichText(
       wordSpanToInlineSpan(wordSpan, ""),
     );
     const wordWidth = ctx.measureText(displayText).width;
+
+    // **FIX: Handle words that are too long to fit on a single line**
+    if (wordWidth > maxWidth) {
+      // If current line has words, finish it first
+      if (currentLineWords.length > 0) {
+        lines.push(
+          buildMeasuredLine(
+            ctx,
+            currentLineWords,
+            blockFontSize,
+            fontFamily,
+            baseFontWeight,
+            baseFontStyle,
+            spaceWidth,
+          ),
+        );
+        currentLineWords = [];
+        currentLineWidth = 0;
+      }
+
+      // Break the long word into characters that fit
+      const chars = displayText.split("");
+      let charLine = "";
+      let charLineWidth = 0;
+
+      for (const char of chars) {
+        const charWidth = ctx.measureText(char).width;
+
+        if (charLineWidth + charWidth > maxWidth && charLine.length > 0) {
+          // Push current character line
+          const truncatedSpan: WordSpan = {
+            ...wordSpan,
+            word: charLine,
+          };
+          lines.push(
+            buildMeasuredLine(
+              ctx,
+              [truncatedSpan],
+              blockFontSize,
+              fontFamily,
+              baseFontWeight,
+              baseFontStyle,
+              spaceWidth,
+            ),
+          );
+          charLine = char;
+          charLineWidth = charWidth;
+        } else {
+          charLine += char;
+          charLineWidth += charWidth;
+        }
+      }
+
+      // Add remaining characters as a new line
+      if (charLine.length > 0) {
+        const remainingSpan: WordSpan = {
+          ...wordSpan,
+          word: charLine,
+        };
+        currentLineWords = [remainingSpan];
+        currentLineWidth = charLineWidth;
+      }
+      continue;
+    }
+
     const widthWithWord =
       currentLineWidth +
       (currentLineWords.length > 0 ? spaceWidth : 0) +
