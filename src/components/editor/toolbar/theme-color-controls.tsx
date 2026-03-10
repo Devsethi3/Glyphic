@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useEditorStore } from "@/store/editor-store";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -6,6 +7,7 @@ import {
   Moon02Icon,
   Sun03Icon,
   ScrollIcon,
+  InformationCircleIcon,
 } from "@hugeicons/core-free-icons";
 import {
   Popover,
@@ -20,6 +22,75 @@ import {
 } from "@/components/ui/tooltip";
 import Scrubber from "@/components/smoothui/scrubber";
 import { cn } from "@/lib/utils";
+
+// Custom Tooltip Component for Paper Texture Info
+const PaperTextureInfoTooltip = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      {/* Trigger */}
+      <button
+        type="button"
+        className="inline-flex items-center ml-1 cursor-help touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm relative z-10"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        onMouseEnter={() => setIsOpen(true)}
+        onMouseLeave={() => setIsOpen(false)}
+        aria-label="Information about paper texture"
+      >
+        <HugeiconsIcon icon={InformationCircleIcon} size={14} />
+      </button>
+
+      {/* Tooltip Content */}
+      {isOpen && (
+        <>
+          {/* Backdrop for mobile - closes on tap outside */}
+          <div
+            className="fixed inset-0 z-[100] md:hidden"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(false);
+            }}
+            aria-hidden="true"
+          />
+
+          {/* Tooltip - Fixed positioning for mobile */}
+          <div
+            className={cn(
+              "fixed md:absolute z-[101] px-3 py-2.5 text-xs leading-relaxed rounded-lg shadow-xl",
+              "bg-popover text-popover-foreground border border-border",
+              // Mobile: centered with max width
+              "left-1/2 -translate-x-1/2 bottom-20 w-[calc(100vw-2rem)] max-w-[280px]",
+              // Desktop: positioned relative to icon
+              "md:w-[240px] md:left-auto md:right-auto md:bottom-auto",
+              "md:top-full md:left-1/2 md:-translate-x-1/2 md:mt-2",
+              // Animation
+              "animate-in fade-in-0 zoom-in-95 duration-200",
+            )}
+            onClick={(e) => e.stopPropagation()}
+            role="tooltip"
+          >
+            {/* Arrow - only visible on desktop */}
+            <div
+              className={cn(
+                "hidden md:block absolute w-2 h-2 rotate-45 bg-popover border-border",
+                "bottom-full left-1/2 -translate-x-1/2 mb-[-4px] border-l border-t",
+              )}
+              aria-hidden="true"
+            />
+            <p className="text-center">
+              Adding texture may slightly increase image size due to
+              high-quality paper effect
+            </p>
+          </div>
+        </>
+      )}
+    </>
+  );
+};
 
 export function ThemeColorControls() {
   const backgroundColor = useEditorStore((s) => s.backgroundColor);
@@ -117,19 +188,22 @@ export function ThemeColorControls() {
             </div>
           </div>
 
-          {/* Paper Texture Toggle */}
-          <button
-            onClick={() => setPaperTexture(!paperTexture)}
-            className={cn(
-              "w-full py-2.5 text-xs rounded-md flex items-center justify-center gap-2 transition-colors border",
-              paperTexture
-                ? "bg-secondary text-foreground border-secondary"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50 border-input",
-            )}
-          >
-            <HugeiconsIcon icon={ScrollIcon} size={14} />
-            Paper Texture
-          </button>
+          {/* Paper Texture Toggle with Info Tooltip */}
+          <div className="relative">
+            <button
+              onClick={() => setPaperTexture(!paperTexture)}
+              className={cn(
+                "w-full py-2.5 text-xs rounded-md flex items-center justify-center gap-2 transition-colors border",
+                paperTexture
+                  ? "bg-secondary text-foreground border-secondary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50 border-input",
+              )}
+            >
+              <HugeiconsIcon icon={ScrollIcon} size={14} />
+              Paper Texture
+              <PaperTextureInfoTooltip />
+            </button>
+          </div>
 
           {/* Noise Intensity Scrubber - Only visible when paper texture is enabled */}
           {paperTexture && (

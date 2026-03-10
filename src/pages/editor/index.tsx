@@ -17,7 +17,6 @@ import {
 export function EditorPage() {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
-  // Desktop Layout 
   if (isDesktop) {
     return (
       <div className="h-screen max-w-6xl mx-auto flex flex-col overflow-hidden bg-background">
@@ -25,7 +24,6 @@ export function EditorPage() {
 
         <div className="flex-1 flex min-h-0">
           <div className="w-1/2 flex flex-col min-h-0 border-r border-border">
-            {/* Toolbar - scrollable */}
             <div className="shrink-0 overflow-y-auto max-h-[45vh] border-b border-border">
               <EditorToolbar />
             </div>
@@ -96,10 +94,12 @@ export function EditorPage() {
       </Tabs>
 
       <div className="shrink-0 p-4 border-t border-border bg-background flex items-center justify-between">
-        <Button size="lg">
-          <HugeiconsIcon icon={GithubIcon} size={14} />
-          GitHub
-        </Button>
+        <a href="https://github.com/Devsethi3/Glyphic" target="_blank">
+          <Button size="lg">
+            <HugeiconsIcon icon={GithubIcon} size={14} />
+            GitHub
+          </Button>
+        </a>
         <ExportDialog />
       </div>
     </div>
