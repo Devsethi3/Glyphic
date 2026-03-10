@@ -1,19 +1,27 @@
 <div align="center">
-  <img src="public/logo.svg" alt="glyphic Logo" width="120" height="120" />
+  <img src="public/logo.svg" alt="Glyphic Logo" width="80" height="80" />
+
 # Glyphic
 
-A browser based text design tool for creating typographic visuals. Write content, customize styling, and export publication-ready images.
+A browser based text design tool for creating typographic visuals.
+<br />
+Write content, customize styling, and export publication-ready images.
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Visit_Site-black?style=for-the-badge)](https://glyphic.devsethi.site)
 [![GitHub Stars](https://img.shields.io/github/stars/devsethi3/glyphic?style=for-the-badge&logo=github&color=yellow)](https://github.com/devsethi3/glyphic)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](./LICENSE)
 
-##Landing
-<img src="public/landing.png" alt="Archway - Visual Architecture Design" width="750" />
-##Landing
-<img src="public/editor.png" alt="Archway - Visual Architecture Design" width="750" />
-
+  <br />
 </div>
+
+<!-- [Features](#-core-features) • [Quick Start](#-getting-started) • [Tech Stack](#-tech-stack) • [Contributing](#-contributing) • [License](#-license) -->
+
+### Landing Page
+
+![Landing Page](/public/landing.png)
+
+### Editor Page
+
+## ![Editor Page](/public/editor.png)
 
 ## Overview
 
@@ -129,7 +137,6 @@ pnpm lint
 
 ### Environment Variables
 
-
 ```env
 VITE_SITE_URL=https://glyphic.devsethi.site  # Your deployment URL
 ```
@@ -217,5 +224,5 @@ Built by [Dev Sethi](https://devsethi.site).
 ## Acknowledgments
 
 - TipTap for the rich text editor
-- Radix UI for accessible primitives
+- ShadcnUI for components
 - Hugeicons for iconography
