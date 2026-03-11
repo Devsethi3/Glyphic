@@ -12,7 +12,6 @@ Write content, customize styling, and export publication-ready images.
 
 </div>
 
-<!-- [Features](#-core-features) • [Quick Start](#-getting-started) • [Tech Stack](#-tech-stack) • [Contributing](#-contributing) • [License](#-license) -->
 
 ![Landing Page](/public/landing.png)
 
